@@ -8,19 +8,21 @@ async def start_command(message: Message):
     """Bot raises this handler if '/start', '/help' or '/info' command is chosen"""
     user_name = message.from_user.first_name
     chat_id = message.from_user.id
-    texts = {"text": ""}
+    texts = {"reply to command": ""}
 
     if message.text == "/start":
-        texts["text"] = f"Привіт, {user_name}!\nВведіть слово для перекладу:"
+        texts["reply to command"] = f"Привіт, {user_name}!\nВведіть слово для перекладу:"
 
     elif message.text == "/help":
-        texts["text"] = "Для того щоб розпочати вивчення мови - просто пишіть мені слова, словосполучення чи " \
-                        "речення, які ви хочете перекласти.\nЯ відразу дам Вам відповідь!"
+        texts["reply to command"] = "Для того щоб розпочати вивчення мови - просто пишіть мені слова, " \
+                                    "словосполучення чи речення, які ви хочете перекласти.\n" \
+                                    "Я відразу дам Вам відповідь!"
 
     elif message.text == "/info":
-        texts["text"] = "Я допоможу Вам вивчити англійську мову!\nВсе дуже просто - напишіть мені щось і я перекладу :)"
+        texts["reply to command"] = "Я допоможу Вам вивчити англійську мову!\n" \
+                                    "Все дуже просто - напишіть мені щось і я перекладу :)"
 
-    reply = texts["text"]
+    reply = texts["reply to command"]
     await bot.send_message(text=reply, chat_id=chat_id)
 
 
