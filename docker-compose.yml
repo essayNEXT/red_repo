@@ -1,0 +1,46 @@
+# Docker-compose configuration for development
+services:
+  red_bot:
+    container_name: red_bot_container
+    image: red_bot_image
+    build:
+      context: .
+    environment:
+      DB_HOST: red_bot_db_host
+      DB_NAME: red_bot_db
+      DB_PORT: 5432
+      POSTGRES_USER: RedIntern
+      POSTGRES_PASSWORD: bot
+      BOT_TOKEN: "${RED_BOT_TOKEN}"
+    depends_on:
+      - red_bot_db
+
+  red_bot_db:
+    container_name: red_bot_db_container
+    image: postgres:15
+    volumes:
+      - postgres_data:/data/postgres
+    ports:
+      - "5432:5432"
+    environment:
+      PGDATA: /data/postgres
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    profiles:
+      - "dev"
+    restart: on-failure
+    environment:
+      PGADMIN_DEFAULT_EMAIL: red_intern@ukr.net
+      PGADMIN_DEFAULT_PASSWORD: RedIntern
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+
