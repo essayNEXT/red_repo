@@ -123,5 +123,7 @@ LANGDICT = {
     'xh': 'xhosa',
     'yi': 'yiddish',
     'yo': 'yoruba',
-    'zu': 'zulu'
+    'zu': 'zulu',
+    '__': 'empty'
 }
+LANGUES = LANGDICT.values()

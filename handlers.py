@@ -1,9 +1,9 @@
 from aiogram.dispatcher.filters import Text
 from aiogram.types import Message, CallbackQuery
-from settings import BOT_TOKEN, LANGDICT, DEFAULT_LANG_CODE
+from settings import BOT_TOKEN, LANGDICT, DEFAULT_LANG_CODE, LANGUES
 from aiogram import Bot, Dispatcher
 from translate import translate_message
-from kb import keyboard, keyboard_in
+from kb import keyboard, keyboard_in, keyboard_all
 
 
 bot = Bot(token=BOT_TOKEN, parse_mode='HTML')
@@ -29,23 +29,30 @@ async def start_command(message: Message):
         texts["reply to command"] = "Я допоможу Вам вивчити англійську мову!\n" \
                                     "Все дуже просто - напишіть мені щось і я перекладу :)"
     elif message.text == "/list":
-        texts["reply to command"] = LANGDICT  # виводимо список мов
+        texts["reply to command"] = LANGUES  # виводимо список мов
 
     reply = texts["reply to command"]
     await message.answer(text=reply, reply_markup=keyboard)  # викликаємо клавіатуру з пропозицією обрати мову перекладу
 
 
 # відображаємо Інлайн клавіатуру з вибором мови
-@dp.message_handler(Text(equals=['Select target language']))
-async def show_choose(message: Message):
-    await message.answer('Select target language', reply_markup=keyboard_in)
+@dp.message_handler(Text(equals=['Favorites language']))
+async def show_favorites(message: Message):
+    await message.answer('Favorites language', reply_markup=keyboard_in)
 
 
+# відображаємо Інлайн клавіатуру з всіма мовами
+@dp.message_handler(Text(equals=['All language']))
+async def show_all_lang(message: Message):
+    await message.answer('All language', reply_markup=keyboard_all)
+
+
+# опис кнопок Інлайн клавіатури
 @dp.callback_query_handler(text_contains='en')
 async def en_kb(call: CallbackQuery):
     global target_language_code
     target_language_code = 'en'
-    await call.message.answer('en')
+    await call.answer('en')
     await call.message.edit_reply_markup(reply_markup=None)
 
 
@@ -53,7 +60,7 @@ async def en_kb(call: CallbackQuery):
 async def uk_kb(call: CallbackQuery):
     global target_language_code
     target_language_code = 'uk'
-    await call.message.answer('uk')
+    await call.answer('uk')
     await call.message.edit_reply_markup(reply_markup=None)
 
 
@@ -61,12 +68,13 @@ async def uk_kb(call: CallbackQuery):
 async def ru_kb(call: CallbackQuery):
     global target_language_code
     target_language_code = 'ru'
-    await call.message.answer('ru')
+    await call.answer('ru')
     await call.message.edit_reply_markup(reply_markup=None)
 
 
 @dp.callback_query_handler(text_contains='cancel')
 async def cancel(call: CallbackQuery):
+    await call.answer()
     await call.message.edit_reply_markup(reply_markup=None)
 
 
