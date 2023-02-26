@@ -124,6 +124,13 @@ LANGDICT = {
     'yi': 'yiddish',
     'yo': 'yoruba',
     'zu': 'zulu',
-    '__': 'empty'
+    '__': '____'
 }
-LANGUES = LANGDICT.values()
+# LANGUES = LANGDICT.values()
+
+LANGUES = '\n'.join([f'{key}: {value}' for key, value in LANGDICT.items()])
+
+lang_list = list(LANGDICT.keys())
+
+# print(LANGUES)
+# print(lang_list)

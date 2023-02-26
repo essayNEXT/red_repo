@@ -3,7 +3,7 @@ from aiogram.types import Message, CallbackQuery
 from settings import BOT_TOKEN, LANGDICT, DEFAULT_LANG_CODE, LANGUES
 from aiogram import Bot, Dispatcher
 from translate import translate_message
-from kb import keyboard, keyboard_in, keyboard_all
+from kb import keyboard, keyboard_in, keyboard_all, kb
 
 
 bot = Bot(token=BOT_TOKEN, parse_mode='HTML')
@@ -32,19 +32,20 @@ async def start_command(message: Message):
         texts["reply to command"] = LANGUES  # виводимо список мов
 
     reply = texts["reply to command"]
-    await message.answer(text=reply, reply_markup=keyboard)  # викликаємо клавіатуру з пропозицією обрати мову перекладу
+    # викликаємо клавіатуру з пропозицією обрати мову перекладу
+    await message.answer(text=reply, reply_markup=keyboard)
 
 
-# відображаємо Інлайн клавіатуру з вибором мови
+# відображаємо Inline клавіатуру з вибором мови
 @dp.message_handler(Text(equals=['Favorites language']))
 async def show_favorites(message: Message):
     await message.answer('Favorites language', reply_markup=keyboard_in)
 
 
-# відображаємо Інлайн клавіатуру з всіма мовами
+# відображаємо клавіатуру з всіма мовами
 @dp.message_handler(Text(equals=['All language']))
 async def show_all_lang(message: Message):
-    await message.answer('All language', reply_markup=keyboard_all)
+    await message.answer('All language', reply_markup=kb)  # keyboard_all - InlineKeyboard
 
 
 # опис кнопок Інлайн клавіатури

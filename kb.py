@@ -1,7 +1,5 @@
-from settings import LANGDICT
-from aiogram.types import ReplyKeyboardRemove, \
-    ReplyKeyboardMarkup, KeyboardButton, \
-    InlineKeyboardMarkup, InlineKeyboardButton
+from settings import LANGDICT, lang_list
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
 
 favorites_language = ['en', 'uk', 'ru']
@@ -9,9 +7,10 @@ favorites_language = ['en', 'uk', 'ru']
 keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text='Favorites language'),
-        KeyboardButton(text='All language')]
+         KeyboardButton(text='All language')]
     ],
-    resize_keyboard=True  # зміна ширини та висоти кнопки по ширині екрану
+    resize_keyboard=True,  # зміна ширини та висоти кнопки по ширині екрану
+    one_time_keyboard=True  # ховати після використання
 )
 
 # один рядок із трьома кнопками + рядок із кнопкою cancel
@@ -27,6 +26,7 @@ keyboard_in = InlineKeyboardMarkup(
     ]
     ]
 )
+
 # All language
 a = 0
 keyss = []
@@ -39,7 +39,15 @@ for i, j in LANGDICT.items():
         a = 0
         keyboard_all.add(keyss[0], keyss[1], keyss[2], keyss[3])
         keyss = []
-print(keyboard_all)
-print(keyss)
+
+
+kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(lang_list[i+12*j]) for i in range(12)] for j in range(int(len(lang_list)/12))
+        ],
+    resize_keyboard=True,  # зміна ширини та висоти кнопки по ширині екрану
+    one_time_keyboard=True  # ховати після використання
+        )
+
 
 
