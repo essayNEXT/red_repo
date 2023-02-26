@@ -15,7 +15,6 @@ target_language_code = DEFAULT_LANG_CODE
 async def start_command(message: Message):
     """Bot raises this handler if '/start', '/help', '/info' or '/list' command is chosen"""
     user_name = message.from_user.first_name
-    #chat_id = message.from_user.id
     texts = {"reply to command": ""}
 
     if message.text == "/start":
@@ -41,12 +40,14 @@ async def start_command(message: Message):
 async def show_choose(message: Message):
     await message.answer('Select target language', reply_markup=keyboard_in)
 
+
 @dp.callback_query_handler(text_contains='en')
 async def en_kb(call: CallbackQuery):
     global target_language_code
     target_language_code = 'en'
     await call.message.answer('en')
     await call.message.edit_reply_markup(reply_markup=None)
+
 
 @dp.callback_query_handler(text_contains='uk')
 async def uk_kb(call: CallbackQuery):
@@ -55,6 +56,7 @@ async def uk_kb(call: CallbackQuery):
     await call.message.answer('uk')
     await call.message.edit_reply_markup(reply_markup=None)
 
+
 @dp.callback_query_handler(text_contains='ru')
 async def ru_kb(call: CallbackQuery):
     global target_language_code
@@ -62,9 +64,11 @@ async def ru_kb(call: CallbackQuery):
     await call.message.answer('ru')
     await call.message.edit_reply_markup(reply_markup=None)
 
+
 @dp.callback_query_handler(text_contains='cancel')
 async def cancel(call: CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=None)
+
 
 @dp.message_handler()
 async def translate(message: Message):
