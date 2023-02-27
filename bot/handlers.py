@@ -28,6 +28,7 @@ async def start_command(message: Message):
 
 @dp.message_handler(Text)
 async def echo(message: Message):
+    print(f"{message.from_user.id} {message.from_user.first_name}")
     """Simple echo handler. Need to convert this handler into translation handler"""
     chat_id = message.from_user.id
     text = f"You said: {message.text}"
