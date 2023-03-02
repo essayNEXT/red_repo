@@ -127,3 +127,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+.translater-bot-intern-b9dec3a171bd.json
