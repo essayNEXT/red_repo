@@ -1,53 +1,61 @@
-from settings import LANGDICT, lang_list
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram_inline_paginations.paginator import Paginator
+from aiogram import Router
 
+router2 = Router()
 
-favorites_language = ['en', 'uk', 'ru']
-
+# викликаємо ReplyKeyboard (Вибір, додавання, видалення мови)
 keyboard = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text='Favorites language'),
-         KeyboardButton(text='All language')]
+        [KeyboardButton(text='Favorites'),
+         KeyboardButton(text='Add'),
+         KeyboardButton(text='Delete')]
     ],
     resize_keyboard=True,  # зміна ширини та висоти кнопки по ширині екрану
     one_time_keyboard=True  # ховати після використання
 )
 
-# один рядок із трьома кнопками + рядок із кнопкою cancel
-keyboard_in = InlineKeyboardMarkup(
-    inline_keyboard=[
-    [
-        InlineKeyboardButton(text='en', callback_data='en'),
-        InlineKeyboardButton(text='uk', callback_data='uk'),
-        InlineKeyboardButton(text='ru', callback_data='ru')
-    ],
-    [
-        InlineKeyboardButton(text='Cancel', callback_data='cancel')
-    ]
-    ]
-)
 
-# All language
-a = 0
-keyss = []
-keyboard_all = InlineKeyboardMarkup(row_width=4)
-for i, j in LANGDICT.items():
-    key = InlineKeyboardButton(j, callback_data=i)
-    keyss.append(key)
-    a += 1
-    if a == 4:
-        a = 0
-        keyboard_all.add(keyss[0], keyss[1], keyss[2], keyss[3])
-        keyss = []
+# InlineKeyboard all languages (для добавления языка в Избранные)
+def kb_add(lang_dict, column=3, row=5):
+    kb = InlineKeyboardBuilder()
+
+    for i, j in lang_dict.items():
+        kb.add(InlineKeyboardButton(text=j, callback_data=f'add: {i}'))
+
+    kb.adjust(column)
+    paginator = Paginator(data=kb.as_markup(), size=row, dp=router2)
+    return paginator()
 
 
-kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(lang_list[i+12*j]) for i in range(12)] for j in range(int(len(lang_list)/12))
-        ],
-    resize_keyboard=True,  # зміна ширини та висоти кнопки по ширині екрану
-    one_time_keyboard=True  # ховати після використання
-        )
+# InlineKeyboard Favorites language (flag '01': 'fav' and /set - '00': 'set')
+def kb_favor(lang_favor):
+    print(lang_favor)
+
+    kb = InlineKeyboardBuilder()
+    # Select interface language
+    if '00' in lang_favor.keys():
+        for i, j in lang_favor.items():
+            if i != '00':
+                kb.add(InlineKeyboardButton(text=i, callback_data=f"set: {i}"))
+    # Select Favorites language
+    elif '01' in lang_favor.keys():
+        for i, j in lang_favor.items():
+            if i != '01':
+                kb.add(InlineKeyboardButton(text=i, callback_data=f"fav: {i}"))
+
+    kb.row(InlineKeyboardButton(text='Cancel', callback_data='cancel'))
+    return kb.as_markup()
 
 
+# InlineKeyboard Delete language
+def kb_del(lang_del):
+    print(lang_del)
 
+    kb = InlineKeyboardBuilder()
+    for i in lang_del:
+        kb.add(InlineKeyboardButton(text=i, callback_data=f'del: {i}'))
+
+    kb.row(InlineKeyboardButton(text='Cancel', callback_data='cancel'))
+    return kb.as_markup()
