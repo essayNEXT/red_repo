@@ -46,7 +46,9 @@ async def start_command(message: Message):
                                 f"By default, the Telegram interface language is set.\n" \
                                 f"English is also installed. \n\n" \
                                 f"Click 'Add' to add the language to Favorites,\n" \
-                                f"Click 'Favorites' to choose the direction of translation"
+                                f"Click 'Favorites' to choose the direction of translation\n\n" \
+                                f"Command /set - allows you to set the interface language from your favorites.\n" \
+                                f"If you don't have the language you want, add it to Favorites first"
                                    # f'За замовчуванням встановлена мова інтерфейсу - українська'
                                    # f"<tg-spoiler>{user_last_name}, " \
                                    # f"{user_id} " \
@@ -66,9 +68,10 @@ async def start_command(message: Message):
             val = (user_id_str, lang_code, 1, 1, 0)
             mycursor.execute(sql, val)
 
-            # додаємо англ, як src_lang
-            val = (user_id_str, 'en', 0, 0, 1)
-            mycursor.execute(sql, val)
+            # если lang_code != 'en' додаємо англ, як src_lang
+            if lang_code != 'en':
+                val = (user_id_str, 'en', 0, 0, 1)
+                mycursor.execute(sql, val)
             con.commit()
             await message.reply("Registered")
         else:
@@ -92,7 +95,8 @@ async def start_command(message: Message):
                                     "Я відразу дам Вам відповідь!\n" \
 
     elif message.text == "/set":
-        texts["reply to command"] = 'Тут треба вибрати мову інтерфейсу з доступних Обраних'
+        texts["reply to command"] = 'Тут треба вибрати мову інтерфейсу з доступних Обраних\n' \
+                                    'Якщо потрібної мови немає, додайте спочатку її до Favorites'
 
         # Відобразити обрані мови - команда "/set"
 
@@ -176,10 +180,11 @@ async def show_all_lang(message: Message):
 
     for i in lst:  # LANGDICT.keys():
         lang = i[0]
-        print(lang)
+        print(f' Favorites {lang}')
         if lang in LANGDICT:
             LANGDICT.pop(lang)
-
+    # import itertools
+    # LANGDICT = dict(itertools.islice(LANGDICT.items(), 6))
     await message.answer('Select language', reply_markup=kb_add(LANGDICT))
 
 
@@ -203,7 +208,7 @@ async def show_all_lang(message: Message):
         else:
             lang_del.append(i[0])
     print(f' Delete language {lang_del}')
-    # Target or Interface language cannot be deleted Виберіть мову, яку треба видалити з Обраних
+    # Src, Target and Interface language cannot be deleted. Виберіть мову, яку треба видалити з Обраних
     await message.answer('Select the language you want to remove from Favorites',
                          reply_markup=kb_del(lang_del))
 
@@ -231,7 +236,7 @@ async def call_select_lang(callback: CallbackQuery):
             interface_lang = 1
         else:
             interface_lang = 0
-        print(i[0], interface_lang)
+        print(f'Interface_lang > DB {i[0]}, {interface_lang}')
 
         sql = "UPDATE users SET interface_lang = ? WHERE telegram_id = ? and lang_code = ?"  # VALUES (?)
         val = (interface_lang, user_id, i[0])
@@ -287,11 +292,7 @@ async def call_select_lang(callback: CallbackQuery):
         elif lang_favor_target == i[0]:
             target_lang = '1'
 
-        print(i[0], src_lang, target_lang)
-        # if pre == 'set:':
-        #     sql = "UPDATE users SET interface_lang = ? WHERE telegram_id = ? and lang_code = ?"  # VALUES (?)
-        # src_lang2 = 0
-        # target_lang2 = 0
+        print(f' Favorites > DB {i[0]}, {src_lang}, {target_lang}')
         sql = "UPDATE users SET src_lang = ?, target_lang = ? WHERE telegram_id = ? and lang_code = ?"  # VALUES (?)
         val = (src_lang, target_lang, user_id, i[0])
         mycursor.execute(sql, val)
@@ -316,7 +317,7 @@ async def add_lang(callback: CallbackQuery):
 
     user_id = str(callback.from_user.id)
     lang_code = callback.data.split()[1]   # відрізаємо префікс 'add:'
-    print(user_id, lang_code)
+    print(f'callback button "Add" IN {user_id}, {lang_code}')
 
     # Зчитати з БД список мов з прапором is_active=0
     mycursor = con.cursor()
@@ -329,7 +330,7 @@ async def add_lang(callback: CallbackQuery):
     lst_active0 = []
     for i in lst:
         lst_active0.append(i[0])  # список ['ru', 'bg', 'uk', 'en']
-    print(lst_active0)
+    print(f'callback button "Add" lst_active_0 {lst_active0}')
 
     if lang_code in lst_active0:
         sql = "UPDATE users SET is_active = ? WHERE telegram_id = ? and lang_code = ?"
@@ -353,7 +354,7 @@ async def add_lang(callback: CallbackQuery):
 async def add_lang(callback: CallbackQuery):
     user_id = str(callback.from_user.id)
     lang_code = callback.data.split()[1]   # відрізаємо префікс 'del:'
-    print(user_id, lang_code)
+    print(f'callback button "Delete" IN {user_id}, {lang_code}')
 
     # Встановлюемо флаг is_active = 0 для мови, яку треба видалити
     mycursor = con.cursor()
@@ -378,7 +379,7 @@ async def translate(message: Message):
     sql = "SELECT lang_code, src_lang, target_lang " \
           "FROM users " \
           "WHERE telegram_id = ? and " \
-          "src_lang=1 or target_lang=1"
+          "(src_lang=1 or target_lang=1)"
         # "SELECT lang_code FROM users WHERE telegram_id=? and target_lang = 1"
     adr = (user_id_str,)
     mycursor.execute(sql, adr)
