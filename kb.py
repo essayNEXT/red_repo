@@ -1,9 +1,39 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_inline_paginations.paginator import Paginator
-from aiogram import Router
+from aiogram import Router, types
 
 router2 = Router()
+
+
+class Paginator2(Paginator):
+
+    def __call__(self, *args, **kwargs):
+        def _is_only_one_page(keyboard):
+            result = False
+            for button in keyboard:
+                if button.text == f"1{self.page_separator}1":
+                    result = True
+                else:
+                    result = False
+            return result
+
+        paginator = super().__call__(*args, **kwargs)
+        if len(paginator.inline_keyboard[-1]) == 1 and _is_only_one_page(paginator.inline_keyboard[-1]):
+            paginator.inline_keyboard.pop()
+        # paginator += types.InlineKeyboardMarkup(inline_keyboard=types.InlineKeyboardButton(text='Cancel', callback_data='cancel'))
+        return paginator
+
+
+def paginator_red_team(kb, dp):
+    kb.row(InlineKeyboardButton(text='Cancel', callback_data='cancel'))
+    column = 3
+    kb.adjust(column)
+    row = 5
+    paginator = Paginator2(data=kb.as_markup(), size=row, dp=dp)
+    pass
+    return paginator()
+
 
 # викликаємо ReplyKeyboard (Вибір, додавання, видалення мови)
 keyboard = ReplyKeyboardMarkup(
@@ -25,7 +55,10 @@ def kb_add(lang_dict, column=3, row=5):
         kb.add(InlineKeyboardButton(text=j, callback_data=f'add: {i}'))
 
     kb.adjust(column)
-    paginator = Paginator(data=kb.as_markup(), size=row, dp=router2)
+
+    kb.row(InlineKeyboardButton(text='Cancel', callback_data='cancel'))
+    paginator = Paginator2(data=kb.as_markup(), size=row, dp=router2)
+
     return paginator()
 
 
@@ -37,8 +70,15 @@ def kb_interface(lang_interface):
     for i in lang_interface.keys():
         kb.add(InlineKeyboardButton(text=i, callback_data=f"set: {i}"))
 
+
+    # return kb.as_markup()
+    column = 3
+    kb.adjust(column)
     kb.row(InlineKeyboardButton(text='Cancel', callback_data='cancel'))
-    return kb.as_markup()
+    row = 5
+    paginator = Paginator2(data=kb.as_markup(), size=row, dp=router2)
+
+    return paginator()
 
 
 # InlineKeyboard Favorites language
@@ -50,10 +90,9 @@ def kb_favor(lang_favor, lst_len=6):
         for j in lang_favor:
             if i != j:
                 kb.add(InlineKeyboardButton(text=f'{i} > {j}', callback_data=f"fav: {i},{j}"))
-                kb.adjust(lst_len)  # не більше 6 стовпчиків
+                # kb.adjust(lst_len)  # не більше 6 стовпчиків
 
-    kb.row(InlineKeyboardButton(text='Cancel', callback_data='cancel'))
-    return kb.as_markup()
+    return paginator_red_team(kb=kb, dp=router2)
 
 
 # InlineKeyboard Delete language

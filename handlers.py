@@ -184,7 +184,7 @@ async def show_all_lang(message: Message):
         if lang in LANGDICT:
             LANGDICT.pop(lang)
     # import itertools
-    # LANGDICT = dict(itertools.islice(LANGDICT.items(), 6))
+    # LANGDICT = dict(itertools.islice(LANGDICT.items(), 7))
     await message.answer('Select language', reply_markup=kb_add(LANGDICT))
 
 
