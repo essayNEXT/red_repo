@@ -29,6 +29,7 @@ class KeyboardPaginatorRedTeam(Paginator):
 
 
 def paginator_red_team(mutable_keyboard, inmutable_keyboard=None, dp=None, *args, **kwargs):
+    # text_button = await localization_manager.get_localized_message(complex_id, "hello")
     inmutable_keyboard = inmutable_keyboard or [types.InlineKeyboardButton(text='Cancel', callback_data='cancel')]
     column, row = 3, 5
     mutable_keyboard.adjust(column)

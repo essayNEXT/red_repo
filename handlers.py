@@ -2,13 +2,13 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, Text
 from aiogram import Router, F
 from kb import keyboard, kb_add, router2, kb_favor, kb_del, kb_interface
+from keyboards import localization_manager
 
 from settings import project_id
 from lang_target import get_supported_languages
 from translate import translate_message
 import sqlite3
 import asyncio
-
 
 # для початку роботи треба запустити Create_sqlite.py і створити БД SQLite
 try:
@@ -42,17 +42,14 @@ async def start_command(message: Message):
     texts = {"reply to command": ""}
 
     if message.text == "/start":
-        texts["reply to command"] = f"Привіт, <b>{user_name}</b>.\n " \
-                                f"By default, the Telegram interface language is set.\n" \
-                                f"English is also installed. \n\n" \
-                                f"Click 'Add' to add the language to Favorites,\n" \
-                                f"Click 'Favorites' to choose the direction of translation\n\n" \
-                                f"Command /set - allows you to set the interface language from your favorites.\n" \
-                                f"If you don't have the language you want, add it to Favorites first"
-                                   # f'За замовчуванням встановлена мова інтерфейсу - українська'
-                                   # f"<tg-spoiler>{user_last_name}, " \
-                                   # f"{user_id} " \
-                                   # f"{user_lang}!</tg-spoiler>\nВведіть слово для перекладу:"
+        # заношу код мови у свій словничок, бо нема часу розбратися з БД. Тарас
+        # user_conf = {} file = localization.py
+        await localization_manager.get_user_language(user_id, lang_code)
+        texts["reply to command"] = await localization_manager.get_localized_message(user_id, "hello", user_name)
+        # f'За замовчуванням встановлена мова інтерфейсу - українська'
+        # f"<tg-spoiler>{user_last_name}, " \
+        # f"{user_id} " \
+        # f"{user_lang}!</tg-spoiler>\nВведіть слово для перекладу:"
 
         # реєстрація користувача в БД
         mycursor = con.cursor()  # створюємо об'єкт курсор (для виконання операцій з БД)
@@ -77,10 +74,10 @@ async def start_command(message: Message):
         else:
             await message.reply("You have already register in bot")
 
-            #получаем от гугла список поддерживаемых языков на языке пользователя
+            # получаем от гугла список поддерживаемых языков на языке пользователя
         LANGDICT = get_supported_languages(project_id, lang_code)
 
-            # записываем справочник от гугла в БД
+        # записываем справочник от гугла в БД
         mycursor.execute("Delete from languages")  # обнуляем базу
         sql = "INSERT INTO languages (lang_code, lang_name) VALUES (?, ?)"
         for key, value in LANGDICT.items():
@@ -90,13 +87,9 @@ async def start_command(message: Message):
         con.commit()
 
     elif message.text == "/help":
-        texts["reply to command"] = "Для того щоб розпочати вивчення мови - просто пишіть мені слова, " \
-                                    "словосполучення чи речення, які ви хочете перекласти.\n" \
-                                    "Я відразу дам Вам відповідь!\n" \
-
+        texts["reply to command"] = await localization_manager.get_localized_message(user_id, "help")
     elif message.text == "/set":
-        texts["reply to command"] = 'Тут треба вибрати мову інтерфейсу з доступних Обраних\n' \
-                                    'Якщо потрібної мови немає, додайте спочатку її до Favorites'
+        texts["reply to command"] = await localization_manager.get_localized_message(user_id, "set")
 
         # Відобразити обрані мови - команда "/set"
 
@@ -113,7 +106,7 @@ async def start_command(message: Message):
             if j == 1:
                 lang_interf = i
 
-        await message.answer(f'now interface language - <b>{lang_interf}</b>, you can change it',
+        await message.answer(await localization_manager.get_localized_message(user_id, "set_answer", lang_interf),
                              reply_markup=kb_interface(lang_interf_dict))
 
     # Вивести список доступних мов перекладу"
@@ -121,7 +114,7 @@ async def start_command(message: Message):
         mycursor = con.cursor()
         sql = "SELECT lang_code, lang_name FROM languages"
         mycursor.execute(sql)
-        myresult = mycursor.fetchall()   # отримуємо список кортежів
+        myresult = mycursor.fetchall()  # отримуємо список кортежів
         # print(myresult)
         LANGDICT = dict(myresult)
         LANGUES = '\n'.join([f'{key}: {value}' for key, value in LANGDICT.items()])
@@ -136,7 +129,6 @@ async def start_command(message: Message):
 # Відобразити обрані мови (напрямок перекладу) - кнопка "Favorites" ==========================
 @router.message(F.text == 'Favorites')
 async def show_favor_lang(message: Message):
-
     user_id = str(message.from_user.id)
     mycursor = con.cursor()
     sql = "SELECT lang_code, src_lang, target_lang FROM users WHERE telegram_id = ? and is_active=1"
@@ -155,8 +147,9 @@ async def show_favor_lang(message: Message):
             lang_favor_target = i[0]
         lang_favor.append(i[0])
 
-    await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>, you can change it',
-                         reply_markup=kb_favor(lang_favor))
+    await message.answer(
+        await localization_manager.get_localized_message(user_id, "favorites_answer", lang_favor_src,lang_favor_target),
+        reply_markup=kb_favor(lang_favor))
 
 
 # Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ======================================
@@ -183,9 +176,10 @@ async def show_all_lang(message: Message):
         print(f' Favorites {lang}')
         if lang in LANGDICT:
             LANGDICT.pop(lang)
-    import itertools
-    LANGDICT = dict(itertools.islice(LANGDICT.items(), 7))
-    await message.answer('Select language', reply_markup=kb_add(LANGDICT))
+    if localization_manager.user_conf.get(user_id) == "sq":
+        import itertools
+        LANGDICT = dict(itertools.islice(LANGDICT.items(), 7))
+    await message.answer(await localization_manager.get_localized_message(user_id, "add"), reply_markup=kb_add(LANGDICT))
 
 
 # видалити мову з обраних - кнопка "Delete"
@@ -209,11 +203,11 @@ async def show_all_lang(message: Message):
             lang_del.append(i[0])
     print(f' Delete language {lang_del}')
     # Src, Target and Interface language cannot be deleted. Виберіть мову, яку треба видалити з Обраних
-    await message.answer('Select the language you want to remove from Favorites',
+    await message.answer(await localization_manager.get_localized_message(user_id, "delete_answer"),
                          reply_markup=kb_del(lang_del))
 
 
-#=======================================================================================
+# =======================================================================================
 # Select interface language (callback command /set)
 # Прочитати з БД дані в словник, потім занести в БД словник з новими даними {lang_code: interface_lang}
 @router.callback_query(Text(startswith=['set:']))  # F.data.startswith('set:')  вход - "set: {i}"
@@ -221,6 +215,7 @@ async def call_select_lang(callback: CallbackQuery):
     user_id = str(callback.from_user.id)
     lang_interf = callback.data.split()[1]  # відрізаємо префікс 'set:'
     print(f'callback Interface input - {user_id} {lang_interf}')
+    localization_manager.user_conf.update({str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
 
     # считуємо з БД список Вибраних мов
     mycursor = con.cursor()
@@ -314,9 +309,8 @@ async def cancel(callback: CallbackQuery):
 # Додавання мови в "Favorites language" (callback button "Add") ==================================
 @router.callback_query(Text(startswith='add:'))  # lambda query: query.data in lang_list)
 async def add_lang(callback: CallbackQuery):
-
     user_id = str(callback.from_user.id)
-    lang_code = callback.data.split()[1]   # відрізаємо префікс 'add:'
+    lang_code = callback.data.split()[1]  # відрізаємо префікс 'add:'
     print(f'callback button "Add" IN {user_id}, {lang_code}')
 
     # Зчитати з БД список мов з прапором is_active=0
@@ -353,7 +347,7 @@ async def add_lang(callback: CallbackQuery):
 @router.callback_query(Text(startswith='del:'))  # lambda query: query.data in lang_list)
 async def add_lang(callback: CallbackQuery):
     user_id = str(callback.from_user.id)
-    lang_code = callback.data.split()[1]   # відрізаємо префікс 'del:'
+    lang_code = callback.data.split()[1]  # відрізаємо префікс 'del:'
     print(f'callback button "Delete" IN {user_id}, {lang_code}')
 
     # Встановлюемо флаг is_active = 0 для мови, яку треба видалити
@@ -380,7 +374,7 @@ async def translate(message: Message):
           "FROM users " \
           "WHERE telegram_id = ? and " \
           "(src_lang=1 or target_lang=1)"
-        # "SELECT lang_code FROM users WHERE telegram_id=? and target_lang = 1"
+    # "SELECT lang_code FROM users WHERE telegram_id=? and target_lang = 1"
     adr = (user_id_str,)
     mycursor.execute(sql, adr)
     result = mycursor.fetchall()  # отримуємо список кортежів [('uk', 0, 1), ('en', 1, 0)]
@@ -398,7 +392,6 @@ async def translate(message: Message):
 
     text = translate_message(message.text, source_language_code, target_language_code)
     await message.answer(text)
-
 
 # async def delete_message(message: Message, sleep_time: int = 0):
 #     await asyncio.sleep(sleep_time)
