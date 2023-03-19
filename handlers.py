@@ -156,7 +156,7 @@ async def show_favor_lang(message: Message):
         lang_favor.append(i[0])
 
     await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>, you can change it',
-                         reply_markup=kb_favor(lang_favor, lst_len=len(lst)-1))
+                         reply_markup=kb_favor(lang_favor))
 
 
 # Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ======================================
@@ -183,8 +183,8 @@ async def show_all_lang(message: Message):
         print(f' Favorites {lang}')
         if lang in LANGDICT:
             LANGDICT.pop(lang)
-    # import itertools
-    # LANGDICT = dict(itertools.islice(LANGDICT.items(), 7))
+    import itertools
+    LANGDICT = dict(itertools.islice(LANGDICT.items(), 7))
     await message.answer('Select language', reply_markup=kb_add(LANGDICT))
 
 
