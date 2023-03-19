@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, Text
 from aiogram import Router, F
@@ -9,6 +11,15 @@ from lang_target import get_supported_languages
 from translate import translate_message
 import sqlite3
 import asyncio
+
+
+class User:
+    def __init__(self, telegram_id: int, default_lang_code: List[Tuple[str, int, int, int]] = ("en", 1, 1, 0, 1), **kwargs):
+        self.user_id = telegram_id
+        self.user_lang = default_lang_code
+
+    def start(self, ):
+
 
 # для початку роботи треба запустити Create_sqlite.py і створити БД SQLite
 try:
@@ -148,7 +159,8 @@ async def show_favor_lang(message: Message):
         lang_favor.append(i[0])
 
     await message.answer(
-        await localization_manager.get_localized_message(user_id, "favorites_answer", lang_favor_src,lang_favor_target),
+        await localization_manager.get_localized_message(user_id, "favorites_answer", lang_favor_src,
+                                                         lang_favor_target),
         reply_markup=kb_favor(lang_favor))
 
 
@@ -179,7 +191,8 @@ async def show_all_lang(message: Message):
     if localization_manager.user_conf.get(user_id) == "sq":
         import itertools
         LANGDICT = dict(itertools.islice(LANGDICT.items(), 7))
-    await message.answer(await localization_manager.get_localized_message(user_id, "add"), reply_markup=kb_add(LANGDICT))
+    await message.answer(await localization_manager.get_localized_message(user_id, "add"),
+                         reply_markup=kb_add(LANGDICT))
 
 
 # видалити мову з обраних - кнопка "Delete"
@@ -215,7 +228,8 @@ async def call_select_lang(callback: CallbackQuery):
     user_id = str(callback.from_user.id)
     lang_interf = callback.data.split()[1]  # відрізаємо префікс 'set:'
     print(f'callback Interface input - {user_id} {lang_interf}')
-    localization_manager.user_conf.update({str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
+    localization_manager.user_conf.update(
+        {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
 
     # считуємо з БД список Вибраних мов
     mycursor = con.cursor()
