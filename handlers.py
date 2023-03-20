@@ -1,13 +1,24 @@
+from typing import Tuple, List
+
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, Text
 from aiogram import Router, F
-import sqlite3
-import asyncio
+from kb import keyboard, kb_add, router2, kb_favor, kb_del, kb_interface
+from keyboards import localization_manager
 
+from settings import project_id
 from lang_target import get_supported_languages
 from translate import translate_message
 from settings import project_id
 from kb import kb_reply, kb_add, router2, kb_favor, kb_del, kb_interface
+
+
+class User:
+    def __init__(self, telegram_id: int, default_lang_code: List[Tuple[str, int, int, int]] = ("en", 1, 1, 0, 1), **kwargs):
+        self.user_id = telegram_id
+        self.user_lang = default_lang_code
+
+    def start(self, ):
 
 
 # для початку роботи треба запустити Create_sqlite.py і створити БД SQLite
@@ -41,18 +52,15 @@ async def start_command(message: Message):
     user_id_str = str(user_id)
     texts = {"reply to command": ""}
 
-    if message.text == "/start":  # ========================= START ======================
-        texts["reply to command"] = f"Привіт, <b>{user_name}</b>.\n " \
-                                f"By default, the Telegram interface language is set.\n" \
-                                f"English is also installed. \n\n" \
-                                f"Click 'Add' to add the language to Favorites,\n" \
-                                f"Click 'Favorites' to choose the direction of translation\n\n" \
-                                f"Command /set - allows you to set the interface language from your favorites.\n" \
-                                f"If you don't have the language you want, add it to Favorites first"
-                                   # f'За замовчуванням встановлена мова інтерфейсу - українська'
-                                   # f"<tg-spoiler>{user_last_name}, " \
-                                   # f"{user_id} " \
-                                   # f"{user_lang}!</tg-spoiler>\nВведіть слово для перекладу:"
+    if message.text == "/start":
+        # заношу код мови у свій словничок, бо нема часу розбратися з БД. Тарас
+        # user_conf = {} file = localization.py
+        await localization_manager.get_user_language(user_id, lang_code)
+        texts["reply to command"] = await localization_manager.get_localized_message(user_id, "hello", user_name)
+        # f'За замовчуванням встановлена мова інтерфейсу - українська'
+        # f"<tg-spoiler>{user_last_name}, " \
+        # f"{user_id} " \
+        # f"{user_lang}!</tg-spoiler>\nВведіть слово для перекладу:"
 
         # реєстрація користувача в БД
         mycursor = con.cursor()  # створюємо об'єкт курсор (для виконання операцій з БД)
@@ -89,15 +97,11 @@ async def start_command(message: Message):
 
         con.commit()
 
-    elif message.text == "/help":  # ========================= HELP ======================
-        texts["reply to command"] = "Для того щоб розпочати вивчення мови - просто пишіть мені слова, " \
-                                    "словосполучення чи речення, які ви хочете перекласти.\n" \
-                                    "Я відразу дам Вам відповідь!\n" \
-
+    elif message.text == "/help": # ========================= HELP ======================
+        texts["reply to command"] = await localization_manager.get_localized_message(user_id, "help")
     # Відобразити обрані мови - команда "/set"
-    elif message.text == "/set":  # ========================= SET ======================
-        texts["reply to command"] ='Тут треба вибрати мову інтерфейсу з доступних Обраних\n' \
-                                  'Якщо потрібної мови немає, додайте її до Favorites.'
+    elif message.text == "/set":
+        texts["reply to command"] = await localization_manager.get_localized_message(user_id, "set")
         pre = "set: "  # префікс для обробки callback-a
         text_cancel = "Cancel"  # напис на кнопці "Скасувати"
 
@@ -114,11 +118,11 @@ async def start_command(message: Message):
             if j == 1:
                 lang_interf = i
 
-        await message.answer(f'Зараз мова інтерфейсу - <b>{lang_interf}</b>',
+        await message.answer(await localization_manager.get_localized_message(user_id, "set_answer", lang_interf),
                              reply_markup=kb_interface(lang_interf_dict, pre, text_cancel))
 
     # Вивести список доступних мов перекладу"
-    elif message.text == "/list":  # ========================= LIST ==============================
+    elif message.text == "/list":
         mycursor = con.cursor()
         sql = "SELECT lang_code, lang_name FROM languages"
         mycursor.execute(sql)
@@ -151,16 +155,17 @@ async def show_favor_lang(message: Message):
     lang_favor = []
     lang_favor_src = ''
     lang_favor_target = ''
-    for i in lst:  # determine active direction translation
+    for i in lst:
         if i[1]:
             lang_favor_src = i[0]
         if i[2]:
             lang_favor_target = i[0]
         lang_favor.append(i[0])
 
-    await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>,\n' \
-                            'you can change it',
-                         reply_markup=kb_favor(lang_favor, pre, text_cancel, lst_len=len(lang_favor)-1))
+    await message.answer(
+        await localization_manager.get_localized_message(user_id, "favorites_answer", lang_favor_src,
+                                                         lang_favor_target),
+        reply_markup=kb_favor(lang_favor, pre, text_cancel, lst_len=len(lang_favor)-1))
 
 
 # Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ================= ADD =====================
@@ -189,9 +194,11 @@ async def show_all_lang(message: Message):
         print(f' Favorites {lang}')
         if lang in LANGDICT:
             LANGDICT.pop(lang)
-    # import itertools
-    # LANGDICT = dict(itertools.islice(LANGDICT.items(), 6))
-    await message.answer('Додати мову перекладу до Favorites', reply_markup=kb_add(LANGDICT, pre))
+    if localization_manager.user_conf.get(user_id) == "sq":
+        import itertools
+        LANGDICT = dict(itertools.islice(LANGDICT.items(), 7))
+    await message.answer(await localization_manager.get_localized_message(user_id, "add"),
+                         reply_markup=kb_add(LANGDICT, pre))
 
 
 # видалити мову з обраних - кнопка "Delete"  ======================== DELETE ===============================
@@ -218,8 +225,10 @@ async def show_all_lang(message: Message):
     print(f' Delete language {lang_del}')
 
     # Src, Target and Interface language cannot be deleted. Виберіть мову, яку треба видалити з Обраних
-    await message.answer('Select the language you want to remove from Favorites',
+    await message.answer(await localization_manager.get_localized_message(user_id, "delete_answer"),
                          reply_markup=kb_del(lang_del, pre, text_cancel))
+    # await message.answer('Select the language you want to remove from Favorites',
+    #                      reply_markup=kb_del(lang_del, pre, text_cancel))
 
 
 #========================================== CALLBACKS =============================================
@@ -230,6 +239,8 @@ async def call_select_lang(callback: CallbackQuery):
     user_id = str(callback.from_user.id)
     lang_interf = callback.data.split()[1]  # відрізаємо префікс 'set:'
     print(f'callback Interface input - {user_id} {lang_interf}')
+    localization_manager.user_conf.update(
+        {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
 
     # считуємо з БД список Вибраних мов
     mycursor = con.cursor()
@@ -389,7 +400,7 @@ async def translate(message: Message):
           "FROM users " \
           "WHERE telegram_id = ? and " \
           "(src_lang=1 or target_lang=1)"
-        # "SELECT lang_code FROM users WHERE telegram_id=? and target_lang = 1"
+    # "SELECT lang_code FROM users WHERE telegram_id=? and target_lang = 1"
     adr = (user_id_str,)
     mycursor.execute(sql, adr)
     result = mycursor.fetchall()  # отримуємо список кортежів [('uk', 0, 1), ('en', 1, 0)]

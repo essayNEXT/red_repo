@@ -1,8 +1,7 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram_inline_paginations.paginator import Paginator
-from aiogram import Router
-
+from aiogram import Router, types
 
 router2 = Router()
 
@@ -17,16 +16,38 @@ def kb_reply(items: list[str]) -> ReplyKeyboardMarkup:
     row = [KeyboardButton(text=item) for item in items]
     return ReplyKeyboardMarkup(keyboard=[row], resize_keyboard=True, one_time_keyboard=True)
 
-# викликаємо ReplyKeyboard (Вибір, додавання, видалення мови) - old
-# keyboard = ReplyKeyboardMarkup(
-#     keyboard=[
-#         [KeyboardButton(text='Favorites'),
-#          KeyboardButton(text='Add'),
-#          KeyboardButton(text='Delete')]
-#     ],
-#     resize_keyboard=True,  # зміна ширини та висоти кнопки по ширині екрану
-#     one_time_keyboard=True  # ховати після використання
-# )
+class KeyboardPaginatorRedTeam(Paginator):
+    def __init__(self, inmutable_keyboard=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.inmutable_keyboard = inmutable_keyboard
+
+    def __call__(self, *args, **kwargs):
+        def _is_only_one_page(keyboard):
+            result = False
+            for button in keyboard:
+                if button.text == f"1{self.page_separator}1":
+                    result = True
+                else:
+                    result = False
+            return result
+
+        paginator = super().__call__( *args, **kwargs)
+        if len(paginator.inline_keyboard[-1]) == 1 and _is_only_one_page(paginator.inline_keyboard[-1]):
+            paginator.inline_keyboard.pop()
+        paginator.inline_keyboard.append(self.inmutable_keyboard) if self.inmutable_keyboard else None
+        return paginator
+
+
+def paginator_red_team(mutable_keyboard, inmutable_keyboard=None, dp=None, *args, **kwargs):
+    # text_button = await localization_manager.get_localized_message(complex_id, "hello")
+ #   inmutable_keyboard = inmutable_keyboard or [types.InlineKeyboardButton(text='Cancel', callback_data='cancel')]
+    column, row = 3, 5
+    mutable_keyboard.adjust(column)
+    # paginator = KeyboardPaginatorRedTeam(data=mutable_keyboard.as_markup(),
+    #                                      inmutable_keyboard=inmutable_keyboard, size=row, dp=dp)
+    paginator = Paginator(data=mutable_keyboard.as_markup(), size=row, dp=dp)
+    return paginator()
+
 
 
 # ============================== InlineKeyboard Add languages (додавання мови в Обрані) ==========
@@ -51,6 +72,7 @@ def kb_add(lang_dict, pre: str, text_cancel: str, column=3, row=5):
     kb.adjust(column)
     paginator = Paginator(data=kb.as_markup(), size=row, dp=router2)
     return paginator()
+    # return paginator_red_team(mutable_keyboard=kb, dp=router2)
 
 
 # ============================== Select interface language ===========================
@@ -72,6 +94,7 @@ def kb_interface(lang_interface: dict, pre: str, text_cancel: str) -> InlineKeyb
 
     kb.row(InlineKeyboardButton(text=text_cancel, callback_data='cancel'))
     return kb.as_markup()
+    # return paginator_red_team(mutable_keyboard=kb, dp=router2)
 
 
 # ================================== InlineKeyboard Favorites language ===================
@@ -100,6 +123,7 @@ def kb_favor(lang_favor: list[str], pre: str, text_cancel: str, lst_len: int) ->
 
     kb.row(InlineKeyboardButton(text=text_cancel, callback_data='cancel'))
     return kb.as_markup()
+    # return paginator_red_team(mutable_keyboard=kb, dp=router2)
 
 
 # ================================== InlineKeyboard Delete language ======================
@@ -121,3 +145,5 @@ def kb_del(lang_del: list[str], pre: str, text_cancel: str) -> InlineKeyboardMar
 
     kb.row(InlineKeyboardButton(text=text_cancel, callback_data='cancel'))
     return kb.as_markup()
+    # return paginator_red_team(mutable_keyboard=kb, dp=router2)
+
