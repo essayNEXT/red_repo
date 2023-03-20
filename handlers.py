@@ -166,6 +166,8 @@ async def show_favor_lang(message: Message):
 # Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ================= ADD =====================
 @router.message(F.text == 'Add')
 async def show_all_lang(message: Message):
+    pre = 'add: '  # префікс для обробки callback-a
+    text_cancel = "Cancel"  # напис на кнопці "Скасувати"
     user_id = str(message.from_user.id)
 
     # отримуємо список обраних мов (щоб виключити їх зі списку мов, які можно додати)
@@ -178,7 +180,7 @@ async def show_all_lang(message: Message):
     # отримуємо з БД список доступних мов
     sql = "SELECT lang_code, lang_name FROM languages"
     mycursor.execute(sql)
-    myresult = mycursor.fetchall()  # отримуємо список кортежів
+    myresult = mycursor.fetchall()  # отримуємо список кортежів [(lang_code, lang_name),]
     # print(myresult)
     LANGDICT = dict(myresult)
 
@@ -189,7 +191,7 @@ async def show_all_lang(message: Message):
             LANGDICT.pop(lang)
     # import itertools
     # LANGDICT = dict(itertools.islice(LANGDICT.items(), 6))
-    await message.answer('Select language', reply_markup=kb_add(LANGDICT))
+    await message.answer('Додати мову перекладу до Favorites', reply_markup=kb_add(LANGDICT, pre))
 
 
 # видалити мову з обраних - кнопка "Delete"  ======================== DELETE ===============================

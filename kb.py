@@ -29,16 +29,24 @@ def kb_reply(items: list[str]) -> ReplyKeyboardMarkup:
 # )
 
 
-# ============================== InlineKeyboard all languages (додавання мови в Обрані) ==========
-"""
-В розробці
-(у зовнішній бібліотеці paginator виявлени помилки)
-"""
-def kb_add(lang_dict, column=3, row=5):
+# ============================== InlineKeyboard Add languages (додавання мови в Обрані) ==========
+def kb_add(lang_dict, pre: str, text_cancel: str, column=3, row=5):
+    """
+       Створює inline-клавіатуру Add languages
+       :param
+       lang_dict: словник текстів для кнопок
+            {Lang_code: Lang_name}
+       pre: префікс для обробки callback-a
+       text_cancel: напис на кнопці "Скасувати"
+
+       :option column=3, row=5 - чмсло колонок і строк відображення кнопок
+            вказані значення по замовчанню
+       :return: об'єкт inline-клавіатури
+       """
     kb = InlineKeyboardBuilder()
 
     for i, j in lang_dict.items():
-        kb.add(InlineKeyboardButton(text=j, callback_data=f'add: {i}'))
+        kb.add(InlineKeyboardButton(text=j, callback_data=f'{pre} {i}'))
 
     kb.adjust(column)
     paginator = Paginator(data=kb.as_markup(), size=row, dp=router2)
@@ -48,12 +56,12 @@ def kb_add(lang_dict, column=3, row=5):
 # ============================== Select interface language ===========================
 def kb_interface(lang_interface: dict, pre: str, text_cancel: str) -> InlineKeyboardMarkup:
     """
-       Створює inline-клавіатуру
+       Створює inline-клавіатуру зміни мови інтерфейсу,
        :param
        lang_interface: словник текстів для кнопок
-                     {'uk': 1, 'en':0} - {Lang_code: Lang_interface}
-       pre: префікс для обробки callback-a
-       text_cancel: напис на кнопці "Скасувати"
+            {'uk': 1, 'en':0} - {Lang_code: Lang_interface},
+       pre: префікс для обробки callback-a,
+       text_cancel: напис на кнопці "Скасувати",
 
        :return: об'єкт inline-клавіатури
        """
