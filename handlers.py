@@ -1,13 +1,13 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, Text
 from aiogram import Router, F
-from kb import keyboard, kb_add, router2, kb_favor, kb_del, kb_interface
-
-from settings import project_id
-from lang_target import get_supported_languages
-from translate import translate_message
 import sqlite3
 import asyncio
+
+from lang_target import get_supported_languages
+from translate import translate_message
+from settings import project_id
+from kb import kb_reply, kb_add, router2, kb_favor, kb_del, kb_interface
 
 
 # для початку роботи треба запустити Create_sqlite.py і створити БД SQLite
@@ -41,7 +41,7 @@ async def start_command(message: Message):
     user_id_str = str(user_id)
     texts = {"reply to command": ""}
 
-    if message.text == "/start":
+    if message.text == "/start":  # ========================= START ======================
         texts["reply to command"] = f"Привіт, <b>{user_name}</b>.\n " \
                                 f"By default, the Telegram interface language is set.\n" \
                                 f"English is also installed. \n\n" \
@@ -89,16 +89,17 @@ async def start_command(message: Message):
 
         con.commit()
 
-    elif message.text == "/help":
+    elif message.text == "/help":  # ========================= HELP ======================
         texts["reply to command"] = "Для того щоб розпочати вивчення мови - просто пишіть мені слова, " \
                                     "словосполучення чи речення, які ви хочете перекласти.\n" \
                                     "Я відразу дам Вам відповідь!\n" \
 
-    elif message.text == "/set":
-        texts["reply to command"] = 'Тут треба вибрати мову інтерфейсу з доступних Обраних\n' \
-                                    'Якщо потрібної мови немає, додайте спочатку її до Favorites'
-
-        # Відобразити обрані мови - команда "/set"
+    # Відобразити обрані мови - команда "/set"
+    elif message.text == "/set":  # ========================= SET ======================
+        texts["reply to command"] ='Тут треба вибрати мову інтерфейсу з доступних Обраних\n' \
+                                  'Якщо потрібної мови немає, додайте її до Favorites.'
+        pre = "set: "  # префікс для обробки callback-a
+        text_cancel = "Cancel"  # напис на кнопці "Скасувати"
 
         mycursor = con.cursor()
         sql = "SELECT lang_code, interface_lang FROM users WHERE telegram_id = ? and is_active=1"
@@ -113,11 +114,11 @@ async def start_command(message: Message):
             if j == 1:
                 lang_interf = i
 
-        await message.answer(f'now interface language - <b>{lang_interf}</b>, you can change it',
-                             reply_markup=kb_interface(lang_interf_dict))
+        await message.answer(f'Зараз мова інтерфейсу - <b>{lang_interf}</b>',
+                             reply_markup=kb_interface(lang_interf_dict, pre, text_cancel))
 
     # Вивести список доступних мов перекладу"
-    elif message.text == "/list":
+    elif message.text == "/list":  # ========================= LIST ==============================
         mycursor = con.cursor()
         sql = "SELECT lang_code, lang_name FROM languages"
         mycursor.execute(sql)
@@ -130,13 +131,15 @@ async def start_command(message: Message):
     reply = texts["reply to command"]
 
     # викликаємо ReplyKeyboard (Выбор, добавление, удаление языка)
-    await message.answer(text=reply, reply_markup=keyboard)
+    kb_list = ['Favorites', 'Add', 'Delete']
+    await message.answer(text=reply, reply_markup=kb_reply(kb_list))
 
 
-# Відобразити обрані мови (напрямок перекладу) - кнопка "Favorites" ==========================
+# Відобразити обрані мови (напрямок перекладу) - кнопка "Favorites" ============== Favorites ===============
 @router.message(F.text == 'Favorites')
 async def show_favor_lang(message: Message):
-
+    pre = 'fav: '  # префікс для обробки callback-a
+    text_cancel = "Cancel"  # напис на кнопці "Скасувати"
     user_id = str(message.from_user.id)
     mycursor = con.cursor()
     sql = "SELECT lang_code, src_lang, target_lang FROM users WHERE telegram_id = ? and is_active=1"
@@ -148,18 +151,19 @@ async def show_favor_lang(message: Message):
     lang_favor = []
     lang_favor_src = ''
     lang_favor_target = ''
-    for i in lst:
+    for i in lst:  # determine active direction translation
         if i[1]:
             lang_favor_src = i[0]
         if i[2]:
             lang_favor_target = i[0]
         lang_favor.append(i[0])
 
-    await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>, you can change it',
-                         reply_markup=kb_favor(lang_favor, lst_len=len(lst)-1))
+    await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>,\n' \
+                            'you can change it',
+                         reply_markup=kb_favor(lang_favor, pre, text_cancel, lst_len=len(lang_favor)-1))
 
 
-# Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ======================================
+# Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ================= ADD =====================
 @router.message(F.text == 'Add')
 async def show_all_lang(message: Message):
     user_id = str(message.from_user.id)
@@ -188,9 +192,11 @@ async def show_all_lang(message: Message):
     await message.answer('Select language', reply_markup=kb_add(LANGDICT))
 
 
-# видалити мову з обраних - кнопка "Delete"
+# видалити мову з обраних - кнопка "Delete"  ======================== DELETE ===============================
 @router.message(F.text == 'Delete')
 async def show_all_lang(message: Message):
+    pre = 'del: '  # префікс для обробки callback-a
+    text_cancel = "Cancel"  # напис на кнопці "Скасувати"
     user_id = str(message.from_user.id)
     mycursor = con.cursor()
     sql = "SELECT lang_code, interface_lang, target_lang, src_lang FROM users WHERE telegram_id = ? and is_active = 1"
@@ -208,12 +214,13 @@ async def show_all_lang(message: Message):
         else:
             lang_del.append(i[0])
     print(f' Delete language {lang_del}')
+
     # Src, Target and Interface language cannot be deleted. Виберіть мову, яку треба видалити з Обраних
     await message.answer('Select the language you want to remove from Favorites',
-                         reply_markup=kb_del(lang_del))
+                         reply_markup=kb_del(lang_del, pre, text_cancel))
 
 
-#=======================================================================================
+#========================================== CALLBACKS =============================================
 # Select interface language (callback command /set)
 # Прочитати з БД дані в словник, потім занести в БД словник з новими даними {lang_code: interface_lang}
 @router.callback_query(Text(startswith=['set:']))  # F.data.startswith('set:')  вход - "set: {i}"
@@ -267,8 +274,8 @@ async def call_select_lang(callback: CallbackQuery):
 async def call_select_lang(callback: CallbackQuery):
     user_id = str(callback.from_user.id)
     lang_favor = callback.data.split()[1]  # відрізаємо префікс 'fav:'
-    lang_favor_src = lang_favor.split(',')[0]
-    lang_favor_target = lang_favor.split(',')[1]
+    lang_favor_src = lang_favor.split('>')[0]
+    lang_favor_target = lang_favor.split('>')[1]
     print(f'callback Favorites input - {user_id} {lang_favor_src} > {lang_favor_target}')
 
     # считуємо з БД список Вибраних мов
