@@ -1,3 +1,4 @@
+import sqlite3
 from typing import Tuple, List
 
 from aiogram.types import Message, CallbackQuery
@@ -18,7 +19,7 @@ class User:
         self.user_id = telegram_id
         self.user_lang = default_lang_code
 
-    def start(self, ):
+    # def start(self, ):
 
 
 # для початку роботи треба запустити Create_sqlite.py і створити БД SQLite
