@@ -16,6 +16,7 @@ def kb_reply(items: list[str]) -> ReplyKeyboardMarkup:
     row = [KeyboardButton(text=item) for item in items]
     return ReplyKeyboardMarkup(keyboard=[row], resize_keyboard=True, one_time_keyboard=True)
 
+# ============================== KeyboardPaginatorRedTeam(Paginator) =======================
 class KeyboardPaginatorRedTeam(Paginator):
     def __init__(self, inmutable_keyboard=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -75,30 +76,31 @@ def kb_add(lang_dict, pre: str, text_cancel: str, column=3, row=5):
     # return paginator_red_team(mutable_keyboard=kb, dp=router2)
 
 
-# ============================== Select interface language ===========================
-def kb_interface(lang_interface: dict, pre: str, text_cancel: str) -> InlineKeyboardMarkup:
+# ============================== Select interface language /set ===========================
+def kb_interface(lang_interface: list, pre: str, immutable_buttons: tuple[str]) -> InlineKeyboardMarkup:
     """
        Створює inline-клавіатуру зміни мови інтерфейсу,
        :param
-       lang_interface: словник текстів для кнопок
-            {'uk': 1, 'en':0} - {Lang_code: Lang_interface},
+       lang_interface: список текстів для кнопок [('uk', 1, 0, 1), ('en', 0, 1, 0), (sq, 0, 0, 0)]
        pre: префікс для обробки callback-a,
-       text_cancel: напис на кнопці "Скасувати",
+       immutable_buttons: список назв до незмінних кнопок (наприклад, "Скасувати",)
 
        :return: об'єкт inline-клавіатури
        """
     print(f'InlineKeyboard Interface input - {lang_interface}')
     kb = InlineKeyboardBuilder()
-    for i in lang_interface.keys():
-        kb.add(InlineKeyboardButton(text=i, callback_data=f"{pre} {i}"))
 
-    kb.row(InlineKeyboardButton(text=text_cancel, callback_data='cancel'))
+    for i in lang_interface:  # динамичні кнопки
+        kb.add(InlineKeyboardButton(text=i[0], callback_data=f"{pre} {i[0]}"))
+
+    for i in immutable_buttons:  # незмінні кнопки
+        kb.row(InlineKeyboardButton(text=i, callback_data=i.lower()))
     return kb.as_markup()
     # return paginator_red_team(mutable_keyboard=kb, dp=router2)
 
 
 # ================================== InlineKeyboard Favorites language ===================
-def kb_favor(lang_favor: list[str], pre: str, text_cancel: str, lst_len: int) -> InlineKeyboardMarkup:
+def kb_favor(lang_favor: list[str], pre: str, immutable_buttons: tuple[str], lst_len: int) -> InlineKeyboardMarkup:
     """
       Створює inline-клавіатуру Обраних мов
       Бажано до 6 мов (щоб мови не перемішувалися),
@@ -107,7 +109,7 @@ def kb_favor(lang_favor: list[str], pre: str, text_cancel: str, lst_len: int) ->
       :param
       lang_favor: список текстів для кнопок
       pre: префікс для обробки callback-a
-      text_cancel: напис на кнопці "Скасувати"
+      immutable_buttons: список назв до незмінних кнопок (наприклад, "Скасувати",)
       lst_len: кількість мов у ряду
 
       :return: об'єкт inline-клавіатури
@@ -121,29 +123,49 @@ def kb_favor(lang_favor: list[str], pre: str, text_cancel: str, lst_len: int) ->
                 kb.add(InlineKeyboardButton(text=f'{i} > {j}', callback_data=f"{pre} {i}>{j}"))
                 kb.adjust(lst_len)  # Бажано до 6 Обраних мов, не більше 6 стовпчиків
 
-    kb.row(InlineKeyboardButton(text=text_cancel, callback_data='cancel'))
+    for i in immutable_buttons:  # незмінні кнопки
+        kb.row(InlineKeyboardButton(text=i, callback_data=i.lower()))
     return kb.as_markup()
     # return paginator_red_team(mutable_keyboard=kb, dp=router2)
 
 
 # ================================== InlineKeyboard Delete language ======================
-def kb_del(lang_del: list[str], pre: str, text_cancel: str) -> InlineKeyboardMarkup:
+def kb_del(lang_del: list[str], pre: str, immutable_buttons: tuple[str]) -> InlineKeyboardMarkup:
     """
       Створює inline-клавіатуру видалення мови з Обраних
 
       :param
       lang_del: список текстів для кнопок
       pre: префікс для обробки callback-a
-      text_cancel: напис на кнопці "Скасувати"
+      immutable_buttons: список назв до незмінних кнопок (наприклад, "Скасувати",)
 
       :return: об'єкт inline-клавіатури
     """
-    print(lang_del)
+
     kb = InlineKeyboardBuilder()
     for i in lang_del:
         kb.add(InlineKeyboardButton(text=i, callback_data=f'{pre} {i}'))
 
-    kb.row(InlineKeyboardButton(text=text_cancel, callback_data='cancel'))
+    for i in immutable_buttons:  # незмінні кнопки
+        kb.row(InlineKeyboardButton(text=i, callback_data=i.lower()))
     return kb.as_markup()
     # return paginator_red_team(mutable_keyboard=kb, dp=router2)
+
+# ================================== reverse translate ======================
+def kb_reverse(buttons: list[str], pre, column=6) -> InlineKeyboardMarkup:
+    """
+    - зміна направлення перекладу на протилежне
+    - додавання слова в картки для тренування
+    :param buttons: список с найменуваннями кнопок
+    :param pre: префікс для обробки callback-a
+    :param column: максимальна кількість кнопок у рядку
+    :return: об'єкт inline-клавіатури
+    """
+    print(buttons)
+    kb = InlineKeyboardBuilder()
+    for i in buttons:
+        kb.add(InlineKeyboardButton(text=i, callback_data=f'{pre} {i}'))
+    kb.adjust(column)
+    return kb.as_markup()
+
 
