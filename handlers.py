@@ -18,20 +18,21 @@ from db import get_langs_all,  get_langs_activ, get_langs_translate, \
 
 
 class User:
-    def __init__(self, telegram_id: int, default_lang_code: List[Tuple[str, int, int, int]] = ("en", 1, 1, 0, 1), **kwargs):
+    def __init__(self, telegram_id: int, default_lang_code: List[Tuple[str, int, int, int, int]] = ("en", 1, 1, 0, 1), **kwargs):
         self.user_id = telegram_id
         self.user_lang = default_lang_code
 
     def start(self, ):
         pass
 
+
 router = Router()
 router.include_router(router2)  # підключаємо роутер клавіатури
+WORK = True  #  Команда /test переводе бота в ехо режим, WORK = False
 
-
-@router.message(Command(commands=['start', 'help', 'set', 'list']))
+@router.message(Command(commands=['start', 'help', 'set', 'list', 'test']))
 async def start_command(message: Message):
-    """Bot raises this handler if '/start', '/help', '/set' or '/list' command is chosen"""
+    """Bot raises this handler if '/start', '/help', '/set', '/list' or /test command is chosen"""
 
     user_name = message.from_user.first_name
     # user_last_name = message.from_user.last_name
@@ -40,6 +41,8 @@ async def start_command(message: Message):
     lang_code = message.from_user.language_code
 
     texts = {"reply to command": ""}
+    kb_list = ['Favorites', 'Add', 'Delete']  # викликаємо ReplyKeyboard (Вибір, додавання, видалення мови) ===
+    reply_markup = kb_reply(kb_list)
 
     if message.text == "/start":  # ========================= START ======================
         # заношу код мови у свій словничок, бо нема часу розбратися з БД. Тарас
@@ -82,14 +85,21 @@ async def start_command(message: Message):
         LANGUES = '\n'.join([f'{key}: {value}' for key, value in LANGDICT.items()])
         texts["reply to command"] = LANGUES    
 
+    elif message.text == "/test":  # Тестовий режим / режим ехо-бота ============== TEST =============
+        global WORK
+        if WORK:
+            WORK = False
+            texts["reply to command"] = '<b>Бот переведен в тестовий режим ехо-бота</b>'
+            reply_markup = None
+        else:
+            WORK = True
+            texts["reply to command"] = '<b>Бот переведен в робочий режим</b>'
+            reply_markup = kb_reply(kb_list)
+
     reply = texts["reply to command"]
+    await message.answer(text=reply, reply_markup=reply_markup)
 
-    # =============== викликаємо ReplyKeyboard (Выбор, добавление, удаление языка) =====================
-    kb_list = ['Favorites', 'Add', 'Delete']
-    await message.answer(text=reply, reply_markup=kb_reply(kb_list))
-
-
-# Відобразити обрані мови (напрямок перекладу) - кнопка "Favorites" ============== Favorites =============
+# ================Відобразити обрані мови (напрямок перекладу) ============== Favorites =============
 @router.message(F.text == 'Favorites')
 async def show_favor_lang(message: Message):
     pre = 'fav: '  # префікс для обробки callback-a
@@ -113,7 +123,6 @@ async def show_favor_lang(message: Message):
     await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>,\n' \
                             'you can change it',
                        reply_markup=kb_favor(lang_favor, pre, immutable_buttons, lst_len=len(lang_favor)-1))
-
 
 
 # Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ================= ADD =====================
@@ -257,17 +266,21 @@ async def add_lang(callback: CallbackQuery):
 @router.message()
 async def translate(message: Message):
     """The bot accepts, translates and returns the translation"""
-    user_id = str(message.from_user.id)
-    pre = 'but: '  # префікс для обробки callback-a
-    buttons = ['<>', 'В_картки']
 
-    source_language_code, target_language_code = get_langs_translate(user_id)
+    if WORK:
+        user_id = str(message.from_user.id)
+        pre = 'but: '  # префікс для обробки callback-a
+        buttons = ['<>', 'В_картки']
 
-    text = translate_message(message.text, source_language_code, target_language_code)
-    
-    await message.reply(f'{source_language_code} > {target_language_code} - <b>{text}</b>',
-                        reply_markup=kb_reverse(buttons, pre))
+        source_language_code, target_language_code = get_langs_translate(user_id)
 
+        text = translate_message(message.text, source_language_code, target_language_code)
+
+        await message.reply(f'{source_language_code} > {target_language_code} - <b>{text}</b>',
+                                 reply_markup=kb_reverse(buttons, pre))
+    else:
+        await message.reply(f'Hello, {message.from_user.first_name}!\n'
+                           f'<b>{message.text}</b>')
 
 # ================================================ Translate CALLBACK ===========================
 @router.callback_query(Text(startswith='but:'))
