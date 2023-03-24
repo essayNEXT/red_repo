@@ -18,6 +18,10 @@ async def set_cmd(bot: Bot):
         BotCommand(
             command='help',
             description='get help (depends on the context)'
+        ),
+        BotCommand(
+            command='test',
+            description='transfer of the bot to the bot echo test mode and back'
         )
     ]
 

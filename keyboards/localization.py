@@ -6,13 +6,13 @@ messages = {
                  "Click 'Add' to add the language to Favorites,\n"
                  "Click 'Favorites' to choose the direction of translation\n\n"
                  "Command /set - allows you to set the interface language from your favorites.\n"
-                 "If you don't have the language you want, add it to Favorites first",
+                 "If you don't have the language you want, add it to Favorites first, command /add",
         "add": "Select language",
         "help": "To start learning a language - just write me the words, "
                 "the phrase or sentence you want to translate.\n"
                 "I'll give you an answer right away!\n",
         "set": "Here you need to select the interface language from the available Favorites \n"
-               "If the desired language is not available, add it to the favorites first",
+               "If the desired language is not available, add it to the favorites first, command /add",
         "set_answer": "now interface language - <b>{}</b>, you can change it",
         "favorites_answer": "active direction translation  <b>{} > {}</b>, you can change it",
         "delete_answer": "Select the language you want to remove in Favorites",
@@ -29,13 +29,13 @@ messages = {
                  "Натисніть 'Add', щоб додати мову до вибраного,\n"
                  "Натисніть 'Favorites', щоб вибрати напрямок перекладу\n\n"
                  "Команда /set - дозволяє встановити мову інтерфейсу з ваших улюблених.\n"
-                 "Якщо у вас немає потрібної мови, спершу додайте її до вибраного",
+                 "Якщо у вас немає потрібної мови, додайте її до вибраного, команда /add",
         "add": "Виберіть мову",
         "help": "Щоб почати вивчати мову - просто напишіть мені слова, "
                 "фраза чи речення, які ви хочете перекласти.\n "
                 "Одразу дам відповідь!\n",
         "set": "Тут вам потрібно вибрати мову інтерфейсу з доступних обраних \n"
-               "Якщо потрібна мова недоступна, спочатку додайте її до вибраного",
+               "Якщо потрібна мова недоступна, додайте її до вибраного, команда /add",
         "set_answer": "тепер мова інтерфейсу - <b>{}</b>, ви можете змінити її",
         "favorites_answer": "активний переклад напрямку <b>{} > {}</b>, ви можете змінити його",
         "delete_answer": "Виберіть мову, яку ви бажаєте видалити у вибраному",

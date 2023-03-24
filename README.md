@@ -25,3 +25,7 @@ Create_sqlite.py
 ![09_sqlite.png](image%2F09_sqlite.png)
 10. list of supported languages
 ![10_list.png](image%2F10_list.png)
+11. Додав функціоналу - кнопки під повідомленням
+(реверс напрямку переводу + додати слово в картки для тренування)
+
+![12_Inline_new.png](image%2F12_Inline_new.png)
