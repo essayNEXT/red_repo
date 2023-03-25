@@ -84,8 +84,8 @@ class Paginator:
         :return: InlineKeyboardMarkup
         """
         _list_current_page = self._list_kb[current_page]
-        print("step 1. self id= /t/t", id(self))
-        print("step 1. list_kb= /t/t", id(self._list_kb))
+        # print("step 1. self id= /t/t", id(self))
+        # print("step 1. list_kb= /t/t", id(self._list_kb))
         
 
         paginations = self._get_paginator(
@@ -163,7 +163,7 @@ class Paginator:
                 text=f'{page + 1}{page_separator}{counts + 1}',
                 callback_data='pass'
             ),
-        )
+        ) if counts != 0 else None
         if counts > page:
             paginations.append(
                 types.InlineKeyboardButton(
@@ -194,8 +194,8 @@ class Paginator:
             page, red_self_id = self._get_page(call)
             self_red_but = [obj for obj in gc.get_objects() if id(obj) == red_self_id][0]
 
-            print("step 2. self id= /t/t", id(self))
-            print("step 2. self_red_but=/t/t ", id(self_red_but))
+            # print("step 2. self id= /t/t", id(self))
+            # print("step 2. self_red_but=/t/t ", id(self_red_but))
             await call.message.edit_reply_markup(
                 reply_markup=self_red_but.__call__(
                     current_page=page
