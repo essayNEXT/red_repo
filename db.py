@@ -19,11 +19,20 @@ with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до
         таблиця languages
         lang_code (VARCHAR) - код мови, яку додаємо до Вибраних (uk)
         lang_name (VARCHAR) - им'я мови, яку додаємо до Вибраних (Ukrainian), це поле заповнюється на мові інтерфейсу
+    
+        таблиця transl_but - тут зберігаються переклади службових повідомлень, кнопок
+        lang_code VARCHAR 
+        lang_list_name VARCHAR
+        
+        таблиця page - збереження станів клавіатури ADD-NEW
+        telegram_id (INTEGER) - id користувача
+        page INTEGER        - № сторінка клавіатури ADD-NEW
+ 
     '''
     cur = con.cursor()
     cur.execute('''CREATE TABLE IF NOT EXISTS users (
                     telegram_id INTEGER       NOT NULL,
-                    lang_code   VARCHAR (255) NOT NULL,
+                    lang_code   VARCHAR       NOT NULL,
                     interface_lang BOOL       NOT NULL
                                               DEFAULT (0),
                     src_lang BOOL             NOT NULL
@@ -31,16 +40,24 @@ with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до
                     target_lang BOOL          DEFAULT (0) 
                                               NOT NULL,
                     is_active   BOOL          NOT NULL
-                                              DEFAULT (1) 
+                                              DEFAULT (1),
+                    PRIMARY KEY(telegram_id, lang_code) 
         )''')
     cur.execute('''CREATE TABLE IF NOT EXISTS languages (
-                        lang_code VARCHAR       NOT NULL,
+                        lang_code VARCHAR       NOT NULL
+                                             PRIMARY KEY,
                         lang_name VARCHAR       NOT NULL
         )''')
     cur.execute('''CREATE TABLE IF NOT EXISTS transl_but (
-                        lang_code VARCHAR       NOT NULL,
+                        lang_code VARCHAR       NOT NULL
+                                                PRIMARY KEY,
                         lang_list_name VARCHAR       NOT NULL
         )''')
+    cur.execute('''CREATE TABLE IF NOT EXISTS page (
+                            telegram_id INTEGER      NOT NULL
+                                                  PRIMARY KEY,
+                            page INTEGER             NOT NULL
+            )''')
 
     con.commit()
 
@@ -210,5 +227,37 @@ def get_langs_translate(user_id: str) -> tuple:  # (source_language_code, target
     print(f' translate out - {source_language_code} > {target_language_code}')
     return source_language_code, target_language_code
 
-# ================================================ Translate CALLBACK ===================
-#def set_langs_translate(user_id: str) -> tuple:  # (source_language_code, target_language_code)
+
+# ================================================ Page ========================
+def get_user_page(user_id: str) -> tuple:
+    # считуєм стан клавіатури ADD-NEW
+
+    mycursor = con.cursor()
+    sql = "SELECT page " \
+          "FROM page " \
+          "WHERE telegram_id = ? "
+    adr = (user_id,)
+    mycursor.execute(sql, adr)
+    result = mycursor.fetchone()
+
+    print(f' get ADD page = {result}')
+    return result
+
+
+def set_user_page(user_id: str, page: int) -> None:
+    # перевіряєм чи існує запис в табл. page
+    myresult = get_user_page(user_id)
+
+    # запам'ятовуєм стан клавіатури ADD
+    mycursor = con.cursor()
+    if myresult is None or myresult == [] or myresult == ():
+        sql = "INSERT INTO page (telegram_id, page) VALUES (?, ?)"  # створюємо, якщо даних немає
+        val = (user_id, page)
+        mycursor.execute(sql, val)
+    else:
+        sql = "UPDATE page SET page = ? WHERE telegram_id = ?"  # обновлюємо, якщо данні є
+        val = (page, user_id)
+        mycursor.execute(sql, val)
+
+    con.commit()
+    print(f' set ADD page = {page}')
