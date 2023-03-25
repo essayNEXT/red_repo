@@ -16,19 +16,10 @@ from db import get_langs_all,  get_langs_activ, get_langs_translate, \
                 set_langs_flag, set_del_lang, set_user, set_langs_all
 
 
-
-class User:
-    def __init__(self, telegram_id: int, default_lang_code: List[Tuple[str, int, int, int, int]] = ("en", 1, 1, 0, 1), **kwargs):
-        self.user_id = telegram_id
-        self.user_lang = default_lang_code
-
-    def start(self, ):
-        pass
-
-
 router = Router()
 router.include_router(router2)  # підключаємо роутер клавіатури
-WORK = True  #  Команда /test переводе бота в ехо режим, WORK = False
+WORK = True  # Команда /test переводе бота в ехо режим, WORK = False
+
 
 @router.message(Command(commands=['start', 'help', 'set', 'list', 'test']))
 async def start_command(message: Message):
@@ -58,7 +49,6 @@ async def start_command(message: Message):
         set_user(user_id, lang_code)
         # отримуємо від гугла словник підтримуваних мов мовою користувача, записуємо його у БД
         set_langs_all(lang_code)
-            
 
     elif message.text == "/help": # ========================= HELP ======================
         texts["reply to command"] = await localization_manager.get_localized_message(user_id, "help")
@@ -99,6 +89,7 @@ async def start_command(message: Message):
     reply = texts["reply to command"]
     await message.answer(text=reply, reply_markup=reply_markup)
 
+
 # ================Відобразити обрані мови (напрямок перекладу) ============== Favorites =============
 @router.message(F.text == 'Favorites')
 async def show_favor_lang(message: Message):
@@ -120,12 +111,12 @@ async def show_favor_lang(message: Message):
             lang_favor_target = i[0]
         lang_favor.append(i[0])
 
-    await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>,\n' \
-                            'you can change it',
-                       reply_markup=kb_favor(lang_favor, pre, immutable_buttons, lst_len=len(lang_favor)-1))
+    await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>,\n'
+                         'you can change it',
+                         reply_markup=kb_favor(lang_favor, pre, immutable_buttons, lst_len=len(lang_favor)-1))
 
 
-# Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ================= ADD =====================
+# Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ============== ADD Paginator Taras ===============
 @router.message(F.text == 'Add')
 async def show_all_lang(message: Message):
     pre = 'add: '  # префікс для обробки callback-a
