@@ -1,15 +1,7 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from keyboards.paginator import Paginator
 from aiogram import Router, types
-
-
-class InlineKeyboardButton(InlineKeyboardButton):
-    def __init__(self, *args, **kwargs):
-        super().__init__( *args, **kwargs)
-        print(self.text)
-        # self.text = self.text.upper()
-
+from keyboards.paginator_taras import Paginator
 router2 = Router()
 
 
@@ -49,16 +41,15 @@ def paginator_red_team(mutable_keyboard, inmutable_keys=None, dp=None, *args, **
     return paginator()
 
 
-
-# ============================== InlineKeyboard Add languages (додавання мови в Обрані) ==========
+# ============================== InlineKeyboard ADD Paginator Taras =========================
 def kb_add(lang_dict, pre: str, immutable_buttons: tuple[str], column=3, row=5):
     """
-       Створює inline-клавіатуру Add languages
+       Створює inline-клавіатуру Add languages (додавання мови в Обрані)
        :param
        lang_dict: словник текстів для кнопок
             {Lang_code: Lang_name}
        pre: префікс для обробки callback-a
-       text_cancel: напис на кнопці "Скасувати"
+       immutable_buttons: список назв до незмінних кнопок (наприклад, "Скасувати",)
 
        :option column=3, row=5 - чмсло колонок і строк відображення кнопок
             вказані значення по замовчанню

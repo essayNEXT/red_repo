@@ -16,19 +16,10 @@ from db import get_langs_all,  get_langs_activ, get_langs_translate, \
                 set_langs_flag, set_del_lang, set_user, set_langs_all
 
 
-
-class User:
-    def __init__(self, telegram_id: int, default_lang_code: List[Tuple[str, int, int, int, int]] = ("en", 1, 1, 0, 1), **kwargs):
-        self.user_id = telegram_id
-        self.user_lang = default_lang_code
-
-    def start(self, ):
-        pass
-
-
 router = Router()
 router.include_router(router2)  # підключаємо роутер клавіатури
-WORK = True  #  Команда /test переводе бота в ехо режим, WORK = False
+WORK = True  # Команда /test переводе бота в ехо режим, WORK = False
+
 
 @router.message(Command(commands=['start', 'help', 'set', 'list', 'test']))
 async def start_command(message: Message):
@@ -58,7 +49,6 @@ async def start_command(message: Message):
         set_user(user_id, lang_code)
         # отримуємо від гугла словник підтримуваних мов мовою користувача, записуємо його у БД
         set_langs_all(lang_code)
-
 
     elif message.text == "/help": # ========================= HELP ======================
         texts["reply to command"] = await localization_manager.get_localized_message(user_id, "help")
@@ -100,16 +90,17 @@ async def start_command(message: Message):
     reply = texts["reply to command"]
     await message.answer(text=reply, reply_markup=reply_markup)
 
+
 # ================Відобразити обрані мови (напрямок перекладу) ============== Favorites =============
 @router.message(F.text == 'Favorites')
 async def show_favor_lang(message: Message):
     pre = 'fav: '  # префікс для обробки callback-a
     immutable_buttons = "Cancel",   # кортеж незмінних кнопок ("Скасувати")
     user_id = str(message.from_user.id)
-
+    
     # отримуємо з БД список кортежів [('uk', 1, 0, 1), ] [lang_code, interface_lang, src_lang, target_lang]
     lst = get_langs_activ(user_id)
-
+    
     # active direction translation
     lang_favor = []
     lang_favor_src = ''
@@ -125,12 +116,12 @@ async def show_favor_lang(message: Message):
     # lang_favor_src = list(filter(None, (map(lambda x: x[2] * x[0], lst))))[0]
     # lang_favor_target= list(filter(None, (map(lambda x: x[3] * x[0], lst))))[0]
 
-    await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>,\n' \
+    await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>,\n'
                             'you can change it',
                        reply_markup=kb_favor(lang_favor, pre, immutable_buttons, lst_len=len(lang_favor)-1))
 
 
-# Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ================= ADD =====================
+# Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ============== ADD Paginator Taras ===============
 @router.message(F.text == 'Add')
 async def show_all_lang(message: Message):
     pre = 'add: '  # префікс для обробки callback-a
@@ -193,7 +184,7 @@ async def show_all_lang(message: Message):
 async def call_select_lang(callback: CallbackQuery):
     user_id = str(callback.from_user.id)
     lang_interf = callback.data.split()[1]  # відрізаємо префікс 'set:'
-
+    
     print(f'input callback Interface  - {user_id} {lang_interf}')
     localization_manager.user_conf.update(
         {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
@@ -218,7 +209,7 @@ async def call_select_lang(callback: CallbackQuery):
     user_id = str(callback.from_user.id)
     lang_favor = callback.data.split()[1]  # відрізаємо префікс 'fav:'
     lang_favor_src, lang_favor_target = lang_favor.split('>')
-
+    
     print(f'input callback Favorites  - {user_id} {lang_favor_src} > {lang_favor_target}')
 
     # зберігаємо в базу зміни src, target мов
@@ -246,14 +237,14 @@ async def add_lang(callback: CallbackQuery):
     print(f'callback button "Add" IN {user_id}, {lang_code}')
 
     set_langs_flag(user_id, lang_code, is_active=0)
-
+    
     await callback.answer(lang_code)
     await callback.message.edit_reply_markup(reply_markup=None)
     await callback.message.delete()
 
 
 # Видалення мови з Обраних ======================== callback button "Delete") =====================
-@router.callback_query(Text(startswith='del:'))
+@router.callback_query(Text(startswith='del:'))  
 async def add_lang(callback: CallbackQuery):
     user_id = str(callback.from_user.id)
     lang_code = callback.data.split()[1]   # відрізаємо префікс 'del:'
