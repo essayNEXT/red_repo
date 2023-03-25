@@ -11,10 +11,9 @@ from aiogram import Router, F
 
 from keyboards import localization_manager
 from translate import translate_message
-from keyboards.kb import kb_reply, kb_add, router2, kb_favor, kb_del, kb_interface, kb_reverse
-from db import get_langs_all,  get_langs_activ, get_langs_translate, \
-                set_langs_flag, set_del_lang, set_user, set_langs_all
-
+from keyboards.kb import kb_reply, kb_add, router2, kb_favor, kb_del, kb_interface, kb_reverse, kb_add_my
+from db import get_langs_all, get_langs_activ, get_langs_translate, \
+    set_langs_flag, set_del_lang, set_user, set_langs_all, set_user_page
 
 router = Router()
 router.include_router(router2)  # підключаємо роутер клавіатури
@@ -135,6 +134,10 @@ async def call_test_pag(callback: CallbackQuery):
 @router.message(F.text == 'Favorites')
 async def show_favor_lang(message: Message):
     user_id = str(message.from_user.id)
+    lst = get_langs_activ(user_id)  # отримуємо список кортежів [('uk', 1, 0, 1), ]
+    lang_interf = filter(None, (map(lambda x: x[1] * x[0], lst))).__next__() or "en"
+    localization_manager.user_conf.update(
+        {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
     pre = 'fav: '  # префікс для обробки callback-a
     immutable_buttons = "OK", "Cancel",  # кортеж незмінних кнопок ("Скасувати")
     immutable_buttons = await button_translation(user_id, immutable_buttons)
@@ -157,7 +160,8 @@ async def show_favor_lang(message: Message):
     # lang_favor_src = list(filter(None, (map(lambda x: x[2] * x[0], lst))))[0]
     # lang_favor_target= list(filter(None, (map(lambda x: x[3] * x[0], lst))))[0]
 
-    await message.answer(await localization_manager.get_localized_message(user_id, "lang_favor_src", "lang_favor_target"),
+    await message.answer(await localization_manager.get_localized_message(user_id, "favorites_answer",
+                                                                          lang_favor_src, lang_favor_target),
                          reply_markup=kb_favor(lang_favor, pre, immutable_buttons, lst_len=len(lang_favor) - 1))
 
 
@@ -168,9 +172,12 @@ async def show_all_lang(message: Message):
     pre = 'add: '  # префікс для обробки callback-a
     immutable_buttons = "Cancel",  # кортеж незмінних кнопок ("Скасувати")
     immutable_buttons = await button_translation(user_id, immutable_buttons)
+
     # отримуємо список обраних мов (щоб виключити їх зі списку мов, які можно додати)
     lst = get_langs_activ(user_id)  # отримуємо список кортежів [('uk', 1, 0, 1), ]
     lang_interf = filter(None, (map(lambda x: x[1] * x[0], lst))).__next__() or "en"
+    localization_manager.user_conf.update(
+        {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
     # отримуємо з БД список доступних мов
     # LANGDICT = get_langs_all()
     langdict = await localization_manager.get_localized_lang(lang_interf)
@@ -191,12 +198,16 @@ async def show_all_lang(message: Message):
 @router.message(F.text == 'Delete')
 async def show_all_lang(message: Message):
     user_id = str(message.from_user.id)
+    # отримуємо з БД список обраних мов
+    lst = get_langs_activ(user_id)  # отримуємо список кортежів [('uk', 1, 0, 1), ]
+    lang_interf = filter(None, (map(lambda x: x[1] * x[0], lst))).__next__() or "en"
+    localization_manager.user_conf.update(
+        {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
     pre = 'del: '  # префікс для обробки callback-a
     immutable_buttons = "Cancel",  # кортеж незмінних кнопок ("Скасувати")
     immutable_buttons = await button_translation(user_id, immutable_buttons)
 
-    # отримуємо з БД список обраних мов
-    lst = get_langs_activ(user_id)  # отримуємо список кортежів [('uk', 1, 0, 1), ]
+
 
     # Формуєм список мов, які можно видаляти
     lang_del = []
