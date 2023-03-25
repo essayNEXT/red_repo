@@ -2,6 +2,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMar
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import Router, types
 from keyboards.paginator_taras import Paginator
+from db import get_langs_all, get_langs_activ, get_user_page
 
 router2 = Router()
 
@@ -86,7 +87,7 @@ def kb_interface(lang_interface: list, pre: str, immutable_buttons: dict[str]) -
     for i in lang_interface:  # динамичні кнопки
         kb.add(InlineKeyboardButton(text=i[0], callback_data=f"{pre} {i[0]}"))
 
-    # незмінні кнопки
+    # незмінні кнопки      callback_data=i.lower() - що при перекладі?
     # kb.row(*[InlineKeyboardButton(text=i, callback_data=i.lower()) for i in immutable_buttons])
     # immutable_buttons = [InlineKeyboardButton(text=i, callback_data=i.lower()) for i in immutable_buttons]
     # return kb.as_markup()
@@ -161,4 +162,56 @@ def kb_reverse(buttons: list[str], pre, column=6) -> InlineKeyboardMarkup:
     for i in buttons:
         kb.add(InlineKeyboardButton(text=i, callback_data=f'{pre} {i}'))
     kb.adjust(column)
+    return kb.as_markup()
+
+
+# ========================================= ADD NEW ==============================
+def kb_add_my(user_id, page=0, row=5, column=3) -> InlineKeyboardMarkup:
+    # перевіряєм чи існує запис в табл. page
+    myresult = get_user_page(user_id)
+    if myresult:
+        page = myresult[0]
+
+    # отримуємо з БД список обраних мов (щоб виключити їх зі списку мов, які можно додати)
+    lst = get_langs_activ(user_id)  # отримуємо список кортежів [('uk', 1, 0, 1), ]
+    print(f' in Favorites {lst}')
+
+    # отримуємо з БД словник доступних мов
+    lang_dict = get_langs_all()
+
+    for i in lst:
+        lang = i[0]
+        # print(f' Favorites {lang}')
+        if lang in lang_dict:
+            lang_dict.pop(lang)  # виключаємо Обрані мови зі списку мов
+    lang_lst = list(lang_dict.items())
+
+    # Розділіть список мов lang_lst на менші частини
+    number_page = int(len(lang_lst) / (column * row))
+    lang_lst_row = [lang_lst[i:i + column] for i in range(0, len(lang_lst), column)]
+    # розгортання всього списку lang_lst на рядковий список кнопок (по 3 мови)
+
+    kb = InlineKeyboardBuilder()
+    r_start = page * row
+    r_end = (page + 1) * row
+
+    if r_end >= len(lang_lst_row):  # щоб уникнути помилки "list index out of range"
+        r_end = len(lang_lst_row)
+
+    for r in range(r_start, r_end):
+        page_langs = lang_lst_row[r]
+        lang_lst_buttons = [InlineKeyboardButton(text=lang[1], callback_data=f"pag: {lang[0]}") for lang in page_langs]
+        kb.row(*lang_lst_buttons)
+
+    previous_button = InlineKeyboardButton(text='⬅️', callback_data=f"prev: {page}")
+    central_button = InlineKeyboardButton(text="Cancel", callback_data="cancel")
+    next_button = InlineKeyboardButton(text='➡️', callback_data=f"next: {page}")
+    button_row = [previous_button, central_button, next_button]
+
+    if page == 0:
+        del button_row[:1]              # Видалення стрелки вліво
+    elif page == number_page:
+        button_row.pop()                 # Видалення стрелки вправо
+
+    kb.row(*button_row)
     return kb.as_markup()

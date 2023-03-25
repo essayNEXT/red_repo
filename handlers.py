@@ -12,8 +12,9 @@ from aiogram import Router, F
 from keyboards import localization_manager
 from translate import translate_message
 from keyboards.kb import kb_reply, kb_add, router2, kb_favor, kb_del, kb_interface, kb_reverse
-from db import get_langs_all, get_langs_activ, get_langs_translate, \
-    set_langs_flag, set_del_lang, set_user, set_langs_all
+from db import get_langs_all,  get_langs_activ, get_langs_translate, \
+                set_langs_flag, set_del_lang, set_user, set_langs_all
+
 
 router = Router()
 router.include_router(router2)  # підключаємо роутер клавіатури
@@ -25,7 +26,7 @@ async def button_translation(user_id: str, name_buttons: tuple) -> dict:
         result.update({x:str(await localization_manager.get_localized_message(user_id, x))})
     return result
 
-@router.message(Command(commands=['start', 'help', 'set', 'list', 'test']))
+@router.message(Command(commands=['start', 'help', 'set', 'list', 'add', 'test']))
 async def start_command(message: Message):
     """Bot raises this handler if '/start', '/help', '/set', '/list' or /test command is chosen"""
 
@@ -44,10 +45,6 @@ async def start_command(message: Message):
         # user_conf = {} file = localization.py
         await localization_manager.get_user_language(user_id, lang_code)
         texts["reply to command"] = await localization_manager.get_localized_message(user_id, "hello", user_name)
-        # f'За замовчуванням встановлена мова інтерфейсу - українська'
-        # f"<tg-spoiler>{user_last_name}, " \
-        # f"{user_id} " \
-        # f"{user_lang}!</tg-spoiler>\nВведіть слово для перекладу:"
 
         # реєстрація користувача в БД
         set_user(user_id, lang_code)
@@ -58,7 +55,7 @@ async def start_command(message: Message):
         texts["reply to command"] = await localization_manager.get_localized_message(user_id, "help")
 
     # Відобразити обрані мови - команда "/set"
-    elif message.text == "/set":  # ========================= SET ======================
+    elif message.text == "/set":   # ========================= SET ======================
         texts["reply to command"] = await localization_manager.get_localized_message(user_id, "set")
         pre = "set: "  # префікс для обробки callback-a
         immutable_buttons = "OK", "Cancel", "Help", "Test eng button"  # кортеж незмінних кнопок ("Скасувати"...)
@@ -91,8 +88,47 @@ async def start_command(message: Message):
             texts["reply to command"] = '<b>Бот переведен в робочий режим</b>'
             reply_markup = kb_reply(kb_list)
 
+    elif message.text == "/add":  # ========================= ADD-NEW ==============================
+        # user_id = str(message.from_user.id)
+        await message.answer(text="Зроби свій вибір!", reply_markup=kb_add_my(user_id))
+
+        texts["reply to command"] = 'Тут треба обрати мову, яку Ви хочете додати до Обраних'
+    # =============================================
     reply = texts["reply to command"]
     await message.answer(text=reply, reply_markup=reply_markup)
+
+# ==============================================CALLBACK ADD-NEW =================================
+@router.callback_query(Text(startswith=['next: ']))
+async def call_test_next(callback: CallbackQuery):
+    user_id = str(callback.from_user.id)
+    page = int(callback.data.split()[1])  # отримуємо номер сторінки, що відображається
+    page += 1
+    set_user_page(user_id, page)
+    await callback.answer(page)
+    await callback.message.edit_reply_markup(reply_markup=kb_add_my(user_id, page))
+
+
+@router.callback_query(Text(startswith=['prev: ']))
+async def call_test_prev(callback: CallbackQuery):
+    user_id = str(callback.from_user.id)
+    page = int(callback.data.split()[1])  # отримуємо номер сторінки, що відображається
+    page -= 1
+    set_user_page(user_id, page)
+    await callback.answer(page)
+    await callback.message.edit_reply_markup(reply_markup=kb_add_my(user_id, page))
+
+
+@router.callback_query(Text(startswith=['pag: ']))
+async def call_test_pag(callback: CallbackQuery):
+    user_id = str(callback.from_user.id)
+    lang_code = callback.data.split()[1]  # отримуємо номер сторінки, що відображається
+
+    print(f'IN callback "Add-NEW"  {user_id}, {lang_code}')
+    set_langs_flag(user_id, lang_code, is_active=0)
+
+    await callback.answer(lang_code)
+    await callback.message.edit_reply_markup(reply_markup=None)
+    await callback.message.delete()
 
 
 # ================Відобразити обрані мови (напрямок перекладу) ============== Favorites =============
@@ -290,7 +326,8 @@ async def message_button(callback: CallbackQuery):
     reverse = callback.data.split()[1]  # відрізаємо префікс 'but:'
 
     print(f'callback  "message_button" {user_id}, {reverse}')
-
+    src_lang, target_lang = ' ', ' ' \
+                                 ''
     if reverse == '<>':
         src_lang, target_lang = get_langs_translate(user_id)
         set_langs_flag(user_id, target_lang, src_lang)  # зберігаємо в базу зміни (реверс) мов

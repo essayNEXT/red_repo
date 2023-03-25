@@ -20,6 +20,10 @@ async def set_cmd(bot: Bot):
             description='get help (depends on the context)'
         ),
         BotCommand(
+            command='add',
+            description='transfer of the bot to the bot echo test mode and back'
+        ),
+        BotCommand(
             command='test',
             description='transfer of the bot to the bot echo test mode and back'
         )
