@@ -37,6 +37,10 @@ with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до
                         lang_code VARCHAR       NOT NULL,
                         lang_name VARCHAR       NOT NULL
         )''')
+    cur.execute('''CREATE TABLE IF NOT EXISTS transl_but (
+                        lang_code VARCHAR       NOT NULL,
+                        lang_list_name VARCHAR       NOT NULL
+        )''')
 
     con.commit()
 

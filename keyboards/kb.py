@@ -1,7 +1,14 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram_inline_paginations.paginator import Paginator
+from keyboards.paginator import Paginator
 from aiogram import Router, types
+
+
+class InlineKeyboardButton(InlineKeyboardButton):
+    def __init__(self, *args, **kwargs):
+        super().__init__( *args, **kwargs)
+        print(self.text)
+        # self.text = self.text.upper()
 
 router2 = Router()
 
@@ -18,41 +25,33 @@ def kb_reply(items: list[str]) -> ReplyKeyboardMarkup:
 
 # ============================== KeyboardPaginatorRedTeam(Paginator) =======================
 class KeyboardPaginatorRedTeam(Paginator):
-    def __init__(self, inmutable_keyboard=None, *args, **kwargs):
+    def __init__(self, inmutable_keys=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.inmutable_keyboard = inmutable_keyboard
+        self.inmutable_keys = inmutable_keys
+
 
     def __call__(self, *args, **kwargs):
-        def _is_only_one_page(keyboard):
-            result = False
-            for button in keyboard:
-                if button.text == f"1{self.page_separator}1":
-                    result = True
-                else:
-                    result = False
-            return result
 
         paginator = super().__call__( *args, **kwargs)
-        if len(paginator.inline_keyboard[-1]) == 1 and _is_only_one_page(paginator.inline_keyboard[-1]):
-            paginator.inline_keyboard.pop()
-        paginator.inline_keyboard.append(self.inmutable_keyboard) if self.inmutable_keyboard else None
+        paginator.inline_keyboard.append(self.inmutable_keys) if self.inmutable_keys else None
         return paginator
 
 
-def paginator_red_team(mutable_keyboard, inmutable_keyboard=None, dp=None, *args, **kwargs):
+def paginator_red_team(mutable_keyboard, inmutable_keys=None, dp=None, *args, **kwargs):
     # text_button = await localization_manager.get_localized_message(complex_id, "hello")
- #   inmutable_keyboard = inmutable_keyboard or [types.InlineKeyboardButton(text='Cancel', callback_data='cancel')]
+    inmutable_keys = inmutable_keys or [types.InlineKeyboardButton(text='Cancel', callback_data='cancel')]
     column, row = 3, 5
     mutable_keyboard.adjust(column)
-    # paginator = KeyboardPaginatorRedTeam(data=mutable_keyboard.as_markup(),
-    #                                      inmutable_keyboard=inmutable_keyboard, size=row, dp=dp)
-    paginator = Paginator(data=mutable_keyboard.as_markup(), size=row, dp=dp)
+
+    paginator = KeyboardPaginatorRedTeam(data=mutable_keyboard.as_markup(),
+                                         inmutable_keys=inmutable_keys, size=row, dp=dp)
+    # paginator = Paginator(data=mutable_keyboard.as_markup(), size=row, dp=dp)
     return paginator()
 
 
 
 # ============================== InlineKeyboard Add languages (додавання мови в Обрані) ==========
-def kb_add(lang_dict, pre: str, text_cancel: str, column=3, row=5):
+def kb_add(lang_dict, pre: str, immutable_buttons: tuple[str], column=3, row=5):
     """
        Створює inline-клавіатуру Add languages
        :param
@@ -69,7 +68,8 @@ def kb_add(lang_dict, pre: str, text_cancel: str, column=3, row=5):
 
     for i, j in lang_dict.items():
         kb.add(InlineKeyboardButton(text=j, callback_data=f'{pre} {i}'))
-
+    # from itertools import islice
+    # list(iter(lambda: tuple(islice((iter(kb.as_markup().inline_keyboard)), 8)), ()))
     kb.adjust(column)
     paginator = Paginator(data=kb.as_markup(), size=row, dp=router2)
     return paginator()
@@ -93,10 +93,13 @@ def kb_interface(lang_interface: list, pre: str, immutable_buttons: tuple[str]) 
     for i in lang_interface:  # динамичні кнопки
         kb.add(InlineKeyboardButton(text=i[0], callback_data=f"{pre} {i[0]}"))
 
-    for i in immutable_buttons:  # незмінні кнопки
-        kb.row(InlineKeyboardButton(text=i, callback_data=i.lower()))
-    return kb.as_markup()
-    # return paginator_red_team(mutable_keyboard=kb, dp=router2)
+
+
+     # незмінні кнопки
+    # kb.row(*[InlineKeyboardButton(text=i, callback_data=i.lower()) for i in immutable_buttons])
+    inmutable_keys = [InlineKeyboardButton(text=i, callback_data=i.lower()) for i in immutable_buttons]
+    # return kb.as_markup()
+    return paginator_red_team(mutable_keyboard=kb, inmutable_keys=inmutable_keys, dp=router2)
 
 
 # ================================== InlineKeyboard Favorites language ===================

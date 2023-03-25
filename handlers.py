@@ -67,15 +67,16 @@ async def start_command(message: Message):
     elif message.text == "/set":   # ========================= SET ======================
         texts["reply to command"] = await localization_manager.get_localized_message(user_id, "set")
         pre = "set: " 			        # префікс для обробки callback-a
-        immutable_buttons = "Cancel",   # кортеж незмінних кнопок ("Скасувати"...)
+        immutable_buttons = "Cancel", "OK", "Help", "Tools"  # кортеж незмінних кнопок ("Скасувати"...)
 
         lang_interf_list = get_langs_activ(user_id)  # отримуємо з БД список мов [('uk', 1, 0, 1), ]
-        lang_interf = ''
+        lang_interf = "en"
         # цикл для показу існуючей інтерфейсної мови
         for i in lang_interf_list:
             if i[1] == 1:
                 lang_interf = i[0]
                 break
+        # lang_interf = list(filter(None, (map(lambda x: x[1] * x[0], lang_interf_list))))[0] or "en"
         await message.answer(f'Зараз мова інтерфейсу - <b>{lang_interf}</b>',
                              reply_markup=kb_interface(lang_interf_list, pre, immutable_buttons))
 
@@ -119,6 +120,10 @@ async def show_favor_lang(message: Message):
         if i[3]:
             lang_favor_target = i[0]
         lang_favor.append(i[0])
+
+    # lang_favor = list(map(lambda x: x[0], lst))
+    # lang_favor_src = list(filter(None, (map(lambda x: x[2] * x[0], lst))))[0]
+    # lang_favor_target= list(filter(None, (map(lambda x: x[3] * x[0], lst))))[0]
 
     await message.answer(f'active direction translation  <b>{lang_favor_src} > {lang_favor_target}</b>,\n' \
                             'you can change it',

@@ -14,3 +14,11 @@ async def get_localized_message(complex_id, message_key: str, *args) -> str:
     except KeyError:
         language = "en"
     return localization.messages[language][message_key].format(*args)
+
+async def get_localized_lang(complex_id, message_key: str, *args) -> str:
+    try:
+        language = user_conf.get(str(complex_id))
+        _ = localization.messages[language][message_key]
+    except KeyError:
+        language = "en"
+    return localization.messages[language][message_key].format(*args)
