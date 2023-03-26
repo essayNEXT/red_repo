@@ -11,7 +11,8 @@ from aiogram import Router, F
 
 from keyboards import localization_manager
 from translate import translate_message
-from keyboards.kb import kb_reply, kb_add, router2, kb_favor, kb_del, kb_interface, kb_reverse, kb_add_my
+from keyboards.kb import kb_reply, paginator_red_team, router2, kb_favor,  kb_reverse, kb_add_my#, \
+        #kb_del, kb_interface, kb_add
 from db import get_langs_all, get_langs_activ, get_langs_translate, \
     set_langs_flag, set_del_lang, set_user, set_langs_all, set_user_page
 
@@ -34,6 +35,7 @@ async def start_command(message: Message):
     # username = message.from_user.username  # 'Ihor_master'
     user_id = str(message.from_user.id)
     lang_code = message.from_user.language_code
+
 
     texts = {"reply to command": ""}
     kb_list = ['Favorites', 'Add', 'Delete']  # викликаємо ReplyKeyboard (Вибір, додавання, видалення мови) ===
@@ -60,15 +62,25 @@ async def start_command(message: Message):
         immutable_buttons = "OK", "Cancel", "Help", "Test eng button"  # кортеж незмінних кнопок ("Скасувати"...)
         immutable_buttons = await button_translation(user_id, immutable_buttons)
         lang_interf_list = get_langs_activ(user_id)  # отримуємо з БД список мов [('uk', 1, 0, 1), ]
-        lang_interf = "en"
+        lang_interf = filter(None, (map(lambda x: x[1] * x[0], lang_interf_list))).__next__() or "en"
+        localization_manager.user_conf.update(
+            {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
+
+        # отримуємо з БД  локалізований список доступних мов
+        langdict = await localization_manager.get_localized_lang(lang_interf)
+        langdict = langdict.copy()
+        # Формуєм словник мов, які можно вибрати для інтерфейсу
+        lang_interf_dict = {}
         # цикл для показу існуючей інтерфейсної мови
         for i in lang_interf_list:
             if i[1] == 1:
                 lang_interf = i[0]
-                break
+                #break
+            lang_interf_dict.update({i[0]: langdict[i[0]]})
         # lang_interf = filter(None, (map(lambda x: x[1] * x[0], lang_interf_list))).__next__() or "en"
         await message.answer(f'Зараз мова інтерфейсу - <b>{lang_interf}</b>',
-                             reply_markup=kb_interface(lang_interf_list, pre, immutable_buttons))
+                             reply_markup=paginator_red_team(mutable_buttons=lang_interf_dict, pre=pre,
+                                                             immutable_buttons=immutable_buttons))
 
     # Вивести список доступних мов перекладу"  # ====================== LIST ============================
     elif message.text == "/list":
@@ -181,6 +193,7 @@ async def show_all_lang(message: Message):
     # отримуємо з БД список доступних мов
     # LANGDICT = get_langs_all()
     langdict = await localization_manager.get_localized_lang(lang_interf)
+    langdict = langdict.copy()
     for i in lst:
         lang = i[0]
         print(f' Favorites {lang}')
@@ -191,7 +204,8 @@ async def show_all_lang(message: Message):
         import itertools
         langdict = dict(itertools.islice(langdict.items(), 7))
     await message.answer(await localization_manager.get_localized_message(user_id, "add"),
-                         reply_markup=kb_add(langdict, pre, immutable_buttons))
+                         reply_markup=paginator_red_team(mutable_buttons=langdict, pre=pre,
+                                                         immutable_buttons=immutable_buttons))
 
 
 # видалити мову з обраних - кнопка "Delete"  ======================== DELETE ===============================
@@ -206,24 +220,30 @@ async def show_all_lang(message: Message):
     pre = 'del: '  # префікс для обробки callback-a
     immutable_buttons = "Cancel",  # кортеж незмінних кнопок ("Скасувати")
     immutable_buttons = await button_translation(user_id, immutable_buttons)
+    langdict = {}
+    # отримуємо з БД список доступних мов
+    langdict = await localization_manager.get_localized_lang(lang_interf)
+    langdict = langdict.copy()
 
 
-
-    # Формуєм список мов, які можно видаляти
-    lang_del = []
+    # Формуєм словник мов, які можно видаляти
+    lang_del = {}# lang_del = []
 
     # цикл для виключення існуючих src, target,  interface мов (їх видаляти не можна)
     for i in lst:
         if i[1] or i[2] or i[3]:
             continue
         else:
-            lang_del.append(i[0])
+            lang_del.update({i[0]: langdict[i[0]]})#lang_del.append(i[0])
+
+
     print(f' Delete language {lang_del}')
 
     # Src, Target and Interface language cannot be deleted. Виберіть мову, яку треба видалити з Обраних
 
     await message.answer(await localization_manager.get_localized_message(user_id, "delete_answer"),
-                         reply_markup=kb_del(lang_del, pre, immutable_buttons))
+                         reply_markup=paginator_red_team(mutable_buttons=lang_del, pre=pre,
+                                                         immutable_buttons=immutable_buttons))
     # await message.answer('Select the language you want to remove from Favorites',
     #                      reply_markup=kb_del(lang_del, pre, immutable_buttons))
 
