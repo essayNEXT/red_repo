@@ -1,6 +1,8 @@
+from typing import Dict, Iterable
+
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram import Router, types
+from aiogram import Router, types, Dispatcher
 from keyboards.paginator_taras import Paginator
 from db import get_langs_all, get_langs_activ, get_user_page
 
@@ -20,7 +22,12 @@ def kb_reply(items: list[str]) -> ReplyKeyboardMarkup:
 
 # ============================== KeyboardPaginatorRedTeam(Paginator) =======================
 class KeyboardPaginatorRedTeam(Paginator):
-    def __init__(self, immutable_buttons=None, *args, **kwargs):
+    """
+    Доповнення основного класу-пагінатора можливістю додавати знизу незмінних/постійних(immutable) клавіш
+    Службовий/внутрішній клас до функції paginator_red_team
+    """
+
+    def __init__(self, immutable_buttons: Dict | None = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.immutable_buttons = immutable_buttons
 
@@ -30,17 +37,57 @@ class KeyboardPaginatorRedTeam(Paginator):
         return paginator
 
 
-def paginator_red_team(mutable_keyboard=None, mutable_buttons: dict = None, immutable_buttons: dict = None,
-                       pre: str = None, dp=router2, *args, **kwargs):
-    # text_button = await localization_manager.get_localized_message(complex_id, "hello")
-    column, row = 3, 5
+def paginator_red_team(mutable_keyboard: types.InlineKeyboardMarkup |
+                                         Iterable[types.InlineKeyboardButton] |
+                                         Iterable[Iterable[types.InlineKeyboardButton]] |
+                                         InlineKeyboardBuilder = None,
+                       mutable_buttons: Dict = None,
+                       pre: str = None,
+                       column: int = 3,
+                       row: int = 5,
+                       immutable_buttons: Dict = None,
+                       dp: Router = router2,
+                       *args, **kwargs):
+    """
+    Обробка кнопок Inline- клавіатури, з можливість пагінації "основної" частини.
+
+    Обов'язкові параметри - mutable_keyboard або mutable_buttons та pre
+
+    Функція обробляє клавіші двох видів, схематично розділені на "змінні"(mutable) та "незмінні"(immutable).
+    На виході оброблені дані передаються в клас-обробник KeyboardPaginatorRedTeam, для кінцевого формування клавіатури
+        заданої конфігурації та властивостей пагінації.
+
+    Вхідні параметри для "змінних"(mutable) можуть бути надані через:
+            - mutable_keyboard - набір готових ТГ об'єктів: кнопок/клавіатур
+            - mutable_buttons - простий словник з набором реквізитів(текст на кнопці та друга частинка
+                    для ідентифікації callback_data) а також pre - перша половина callback_data
+
+    Вхідні параметри для "незмінної"(immutable) чистини клавіатури - це простий словник з набором реквізитів(текст
+            на кнопці та дані для ідентифікації callback_data)
+
+    На вхід приймає клавіші основної частини, які можуть змінні клавіші
+    :param mutable_keyboard: набір готових ТГ об'єктів, для формування основної частини Inline-клавіатури користувача
+                  types.InlineKeyboardMarkup |
+                  Iterable[types.InlineKeyboardButton] |
+                  Iterable[Iterable[types.InlineKeyboardButton]] |
+                  InlineKeyboardBuilder
+    :param mutable_buttons: Dict[sts: str] словник з набором параметрів, для формування Inline-клавіатури користувача
+    :param pre: перша половина callback_data
+    :param immutable_buttons: словник з набором параметрів, для формування Inline-клавіатури незмінних кнопок
+    :param dp:
+    :param column: кількість кнопок в ряді
+    :param row:  кількість рядів на одному листі пагінації
+    :param args:  додаткові параметри
+    :param kwargs:
+    :return: повертає готовий ТГ-об'єкт Inline-клавіатуру для інтерактивної комунікації користувача з програмою
+    """
     if immutable_buttons:  # формування незмінних кнопок знизу клави
         immutable_buttons = [InlineKeyboardButton(text=text, callback_data=callbk.lower())
                              for callbk, text in immutable_buttons.items()]
     else:
         immutable_buttons = types.InlineKeyboardButton(text='Cancel', callback_data='cancel')
 
-    if mutable_buttons:  # формування змінних кнопок клави
+    if mutable_buttons and pre:  # формування змінних кнопок клави
         mutable_keyboard = InlineKeyboardBuilder()
         for callbk, text in mutable_buttons.items():
             mutable_keyboard.add(InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk}'))
