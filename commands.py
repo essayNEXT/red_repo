@@ -1,6 +1,7 @@
 from aiogram import Bot
 from aiogram.types import BotCommand, BotCommandScopeDefault
 
+
 async def set_cmd(bot: Bot):
     commands = [
         BotCommand(
@@ -21,7 +22,7 @@ async def set_cmd(bot: Bot):
         ),
         BotCommand(
             command='add',
-            description='transfer of the bot to the bot echo test mode and back'
+            description='an alternative form for adding translation languages'
         ),
         BotCommand(
             command='test',

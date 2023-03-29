@@ -6,13 +6,15 @@ from keyboards import localization_manager
 from translate import translate_message
 from keyboards.kb import kb_reply, paginator_red_team, router2, kb_favor,  kb_reverse, kb_add_my
 # kb_del, kb_interface, kb_add
-from db import get_langs_all, get_langs_activ, get_langs_translate, \
+from db import get_langs_all, get_langs_activ, get_langs_translate, get_cards, \
     set_langs_flag, set_del_lang, set_user, set_langs_all, set_user_page, set_cards
 
 router = Router()
 router.include_router(router2)  # підключаємо роутер клавіатури
 WORK = True  # Команда /test переводе бота в ехо режим, WORK = False
-
+train = tuple()
+result = 0
+number = 0
 
 async def button_translation(user_id: str, name_buttons: tuple) -> dict:
     result = {}
@@ -85,7 +87,7 @@ async def start_command(message: Message):
         LANGUES = '\n'.join([f'{key}: {value}' for key, value in lang_dict.items()])
         texts["reply to command"] = LANGUES
 
-    elif message.text == "/test":  # Тестовий режим / режим ехо-бота ============== TEST =============
+    elif message.text == "/test":  # Тестовий режим / режим ехо-бота ============= TEST =============
         global WORK
         if WORK:
             WORK = False
@@ -326,6 +328,28 @@ async def add_lang(callback: CallbackQuery):
     await callback.message.delete()
 
 
+# =================================================== Тренування =====================================
+@router.message(Text(startswith=['!']))  # (Text(startswith=['pag: ']))
+async def training(message: Message):
+    global train, result, number
+    user_id = str(message.from_user.id)
+    lst = message.text.split()
+    print(f'message - {lst}')
+
+    if len(lst) == 1:
+        train = get_cards(user_id)  # ('en', 'umbrella', 'uk', 'парасолька')
+        await message.answer(text=f"Тренування, надай переклад слова <b>{train[1]}</b>  {train[0]} > {train[2]}")
+    elif lst[1] == train[3]:
+        number += 1
+        result += 1
+        await message.answer(text=f"Переклад получен. Вімінно, +1 у карму\n" \
+                                  f"Ваш результат {result} из {number}")
+    else:
+        number += 1
+        await message.answer(text=f"Переклад получен. Помилка. Правильно - {train[3]} \n" \
+                                  f"Ваш результат {result} из {number}")
+
+
 # ======================================================== Translate ==============================
 @router.message()
 async def translate(message: Message):
@@ -373,3 +397,6 @@ async def message_button(callback: CallbackQuery):
     elif reverse == 'cancel':
         await callback.answer('cancel')
         await callback.message.edit_reply_markup(reply_markup=None)
+
+
+

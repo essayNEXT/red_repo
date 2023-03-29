@@ -2,6 +2,7 @@ import sqlite3
 from lang_target import get_supported_languages
 from settings import project_id
 import json
+from random import randint
 
 
 with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до БД
@@ -60,14 +61,17 @@ with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до
                             page INTEGER             NOT NULL
             )''')
     cur.execute('''CREATE TABLE IF NOT EXISTS cards (
-                        telegram_id         VARCHAR       NOT NULL,
-                        lang_code_src       VARCHAR       NOT NULL,
-                        txt_src             VARCHAR       NOT NULL,
-                        lang_code_target    VARCHAR       NOT NULL,
-                        txt_target          VARCHAR       NOT NULL
+    telegram_id      VARCHAR NOT NULL,
+    lang_code_src    VARCHAR NOT NULL,
+    txt_src          VARCHAR NOT NULL,
+    lang_code_target VARCHAR NOT NULL,
+    txt_target       VARCHAR NOT NULL,
+    is_active        BOOL    NOT NULL
+                             DEFAULT (1) 
             )''')
 
     con.commit()
+
 
 # ========================================= set_user =======================================
 def set_user(user_id: str, lang_code: str) -> None:
@@ -288,16 +292,33 @@ def set_user_page(user_id: str, page: int) -> None:
     print(f' set ADD page = {page}')
 
 
-# ================================================ Cards ===============================
-def set_cards(user_id: str, lang_code_src:str, txt_src:str, lang_code_target:str, txt_target:str) -> None:
+# ======================================================= Cards ===============================
+def set_cards(user_id: str, lang_code_src: str, txt_src: str, lang_code_target: str, txt_target: str) -> None:
     mycursor = con.cursor()
     sql = "INSERT INTO cards (telegram_id, lang_code_src, txt_src, lang_code_target, txt_target) " \
-          "VALUES (?, ?, ?, ?, ?)"  # створюємо запис (вставити, або замінити, якщо вже є)
+          "VALUES (?, ?, ?, ?, ?)"  # створюємо запис
     val = (user_id, lang_code_src, txt_src, lang_code_target, txt_target)
     mycursor.execute(sql, val)
     con.commit()
 
 
+# ============ Тренування ===================
+def get_cards(user_id: str, is_active=1) -> tuple:  # случайная выборка 1 пары перевода
+    mycursor = con.cursor()
+    sql = '''SELECT lang_code_src, txt_src, lang_code_target, txt_target 
+             FROM cards 
+             WHERE telegram_id = ? and is_active = ?'''
+    val = (user_id, is_active)
+    mycursor.execute(sql, val)
+    lst = mycursor.fetchall()  # отримуємо список кортежів
+    end = len(lst)
+    ran = randint(0, end)
+
+    print(lst[ran], ran)
+    return lst[ran]
+
+
 if __name__ == '__main__':
     lang_code = 'ru'
-    set_langs_all(lang_code)
+    # set_langs_all(lang_code)
+    get_cards(1327984097)
