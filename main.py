@@ -14,7 +14,7 @@ async def start_bot():
     bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
     dp = Dispatcher(storage=storage)
     dp.include_router(router)
-    #dp.message.register(start_command, Command(commands=['start', 'help', 'set', 'list']))  # CommandStart()
+    # dp.message.register(start_command, Command(commands=['start', 'help', 'set', 'list']))  # CommandStart()
 
     # формуємо меню команд
     await set_cmd(bot)

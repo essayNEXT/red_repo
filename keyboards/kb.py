@@ -203,7 +203,7 @@ def kb_favor(lang_favor: list[str], pre: str, immutable_buttons: dict[str], lst_
 
 
 # ================================== reverse translate ======================
-def kb_reverse(buttons: list[str], pre, column=6) -> InlineKeyboardMarkup:
+def kb_reverse(buttons: list[str], pre: str, text_s:str, text_t: str, column=6) -> InlineKeyboardMarkup:
     """
     - зміна направлення перекладу на протилежне
     - додавання слова в картки для тренування
@@ -215,13 +215,24 @@ def kb_reverse(buttons: list[str], pre, column=6) -> InlineKeyboardMarkup:
     print(buttons)
     kb = InlineKeyboardBuilder()
     for i in buttons:
-        kb.add(InlineKeyboardButton(text=i, callback_data=f'{pre} {i}'))
+        kb.add(InlineKeyboardButton(text=i, callback_data=f'{pre} {i} {text_s} {text_t}'))
     kb.adjust(column)
     return kb.as_markup()
 
 
 # ========================================= ADD NEW ==============================
 def kb_add_my(user_id, page=0, row=5, column=3) -> InlineKeyboardMarkup:
+    """
+    Альтернативна фунція додавання мови в Обрані. Зберігається стан клавіатури в БД.
+    Наступний старт відбувається зі стану попередньго запуску.
+    Нині підтримує однозначний вибір
+    Додана можливість додавання верхніх незмінних кнопок lang_1, lang_2
+    :param user_id: telegram_id користувача
+    :param page: стартова сторінка
+    :param row:  число строк
+    :param column: число стовпчиків
+    :return: об'єкт InlineKeyboardMarkup
+    """
     # перевіряєм чи існує запис в табл. page
     myresult = get_user_page(user_id)
     if myresult:
@@ -231,8 +242,12 @@ def kb_add_my(user_id, page=0, row=5, column=3) -> InlineKeyboardMarkup:
     lst = get_langs_activ(user_id)  # отримуємо список кортежів [('uk', 1, 0, 1), ]
     print(f' in Favorites {lst}')
 
-    # отримуємо з БД словник доступних мов
-    lang_dict = get_langs_all()
+    lang_code = filter(None, (map(lambda x: x[1] * x[0], lst))).__next__()  # отримуємо мову інтерфейсу
+    print(f'lang_code = {lang_code}')
+
+    # отримуємо з БД словник доступних мов на мові інтерфейсу
+    lang_dict = get_langs_all(lang_code)
+
 
     for i in lst:
         lang = i[0]
@@ -247,17 +262,25 @@ def kb_add_my(user_id, page=0, row=5, column=3) -> InlineKeyboardMarkup:
     # розгортання всього списку lang_lst на рядковий список кнопок (по 3 мови)
 
     kb = InlineKeyboardBuilder()
+    # покаток та кінец сторінки
     r_start = page * row
     r_end = (page + 1) * row
 
     if r_end >= len(lang_lst_row):  # щоб уникнути помилки "list index out of range"
         r_end = len(lang_lst_row)
 
+    # не змінні кнопки з верху
+    lang_1 = InlineKeyboardButton(text="first lang", callback_data=f"lang_1")
+    lang_2 = InlineKeyboardButton(text="second lang", callback_data=f"lang_2")
+    kb.row(lang_1, lang_2)
+
+    # блок змінних кнопок
     for r in range(r_start, r_end):
         page_langs = lang_lst_row[r]
         lang_lst_buttons = [InlineKeyboardButton(text=lang[1], callback_data=f"pag: {lang[0]}") for lang in page_langs]
         kb.row(*lang_lst_buttons)
 
+    # не змінні кнопки з низу
     previous_button = InlineKeyboardButton(text='⬅️', callback_data=f"prev: {page}")
     central_button = InlineKeyboardButton(text="Cancel", callback_data="cancel")
     next_button = InlineKeyboardButton(text='➡️', callback_data=f"next: {page}")

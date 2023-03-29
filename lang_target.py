@@ -49,8 +49,9 @@ def get_supported_languages(project_id=project_id, lang_code='en'):
 
 
 def main():
-    lang_code = 'uk'
+    lang_code = 'de'
     dict_list = get_supported_languages(project_id, lang_code)
+    print(dict_list)
     # with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до БД
     #     if con:
     #         print("База даних успішно підключена")

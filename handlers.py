@@ -1,30 +1,25 @@
-from typing import Tuple, List
-
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, Text
 from aiogram import Router, F
 
-# from kb import keyboard, kb_add, router2, kb_favor, kb_del, kb_interface
-# from settings import project_id
-# from lang_target import get_supported_languages
-# from kb import kb_reply, kb_add, router2, kb_favor, kb_del, kb_interface
-
 from keyboards import localization_manager
 from translate import translate_message
-from keyboards.kb import kb_reply, paginator_red_team, router2, kb_favor,  kb_reverse, kb_add_my#, \
-        #kb_del, kb_interface, kb_add
+from keyboards.kb import kb_reply, paginator_red_team, router2, kb_favor,  kb_reverse, kb_add_my
+# kb_del, kb_interface, kb_add
 from db import get_langs_all, get_langs_activ, get_langs_translate, \
-    set_langs_flag, set_del_lang, set_user, set_langs_all, set_user_page
+    set_langs_flag, set_del_lang, set_user, set_langs_all, set_user_page, set_cards
 
 router = Router()
 router.include_router(router2)  # підключаємо роутер клавіатури
 WORK = True  # Команда /test переводе бота в ехо режим, WORK = False
 
+
 async def button_translation(user_id: str, name_buttons: tuple) -> dict:
     result = {}
     for x in name_buttons:
-        result.update({x:str(await localization_manager.get_localized_message(user_id, x))})
+        result.update({x: str(await localization_manager.get_localized_message(user_id, x))})
     return result
+
 
 @router.message(Command(commands=['start', 'help', 'set', 'list', 'add', 'test']))
 async def start_command(message: Message):
@@ -35,7 +30,6 @@ async def start_command(message: Message):
     # username = message.from_user.username  # 'Ihor_master'
     user_id = str(message.from_user.id)
     lang_code = message.from_user.language_code
-
 
     texts = {"reply to command": ""}
     kb_list = ['Favorites', 'Add', 'Delete']  # викликаємо ReplyKeyboard (Вибір, додавання, видалення мови) ===
@@ -84,8 +78,11 @@ async def start_command(message: Message):
 
     # Вивести список доступних мов перекладу"  # ====================== LIST ============================
     elif message.text == "/list":
-        LANGDICT = get_langs_all()  # отримуємо з БД словник мов {Lang_code: Lang_interface}
-        LANGUES = '\n'.join([f'{key}: {value}' for key, value in LANGDICT.items()])
+        lang_interf_list = get_langs_activ(user_id)  # отримуємо з БД список мов [('uk', 1, 0, 1), ]
+        lang_interf = filter(None, (map(lambda x: x[1] * x[0], lang_interf_list))).__next__()
+
+        lang_dict = get_langs_all(lang_interf)  # отримуємо з БД словник мов {Lang_code: Lang_interface}
+        LANGUES = '\n'.join([f'{key}: {value}' for key, value in lang_dict.items()])
         texts["reply to command"] = LANGUES
 
     elif message.text == "/test":  # Тестовий режим / режим ехо-бота ============== TEST =============
@@ -191,7 +188,7 @@ async def show_all_lang(message: Message):
     localization_manager.user_conf.update(
         {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
     # отримуємо з БД список доступних мов
-    # LANGDICT = get_langs_all()
+    # LANGDICT = get_langs_all(lang_interf)
     langdict = await localization_manager.get_localized_lang(lang_interf)
     langdict = langdict.copy()
     for i in lst:
@@ -337,14 +334,14 @@ async def translate(message: Message):
     if WORK:
         user_id = str(message.from_user.id)
         pre = 'but: '  # префікс для обробки callback-a
-        buttons = ['<>', 'В_картки']
+        buttons = ['<>', 'cancel', 'В_картки']
 
         source_language_code, target_language_code = get_langs_translate(user_id)
 
         text = translate_message(message.text, source_language_code, target_language_code)
 
         await message.reply(f'{source_language_code} > {target_language_code} - <b>{text}</b>',
-                            reply_markup=kb_reverse(buttons, pre))
+                            reply_markup=kb_reverse(buttons, pre, text_s=message.text, text_t=text))
     else:
         await message.reply(f'Hello, {message.from_user.first_name}!\n'
                             f'<b>{message.text}</b>')
@@ -354,17 +351,25 @@ async def translate(message: Message):
 @router.callback_query(Text(startswith='but:'))
 async def message_button(callback: CallbackQuery):
     user_id = str(callback.from_user.id)
+    # print(callback.data)
     reverse = callback.data.split()[1]  # відрізаємо префікс 'but:'
+    txt_src = callback.data.split()[2]  # переводимій текст
+    txt_target = callback.data.split()[3]  # результат перекладу
 
-    print(f'callback  "message_button" {user_id}, {reverse}')
-    src_lang, target_lang = ' ', ' ' \
-                                 ''
+    #print(f'callback  "message_button" {user_id}, {reverse}')
+    # src_lang, target_lang = ' ', ' '
+    src_lang, target_lang = get_langs_translate(user_id)
+
     if reverse == '<>':
-        src_lang, target_lang = get_langs_translate(user_id)
         set_langs_flag(user_id, target_lang, src_lang)  # зберігаємо в базу зміни (реверс) мов
+        await callback.answer(f'{target_lang} > {src_lang}')
+        await callback.message.answer(f'Направлення перекладу змінено на {target_lang} > {src_lang}')
     elif reverse == 'В_картки':
-        pass
+        set_cards(user_id, src_lang, txt_src, target_lang, txt_target)
+        await callback.answer(f'Додано В картки')
 
-    await callback.answer(f'{target_lang} > {src_lang}')
-    button2 = [f'{target_lang} > {src_lang}', 'В_картки']
-    await callback.message.answer(f'Направлення перекладу змінено на {target_lang} > {src_lang}')
+    # button2 = [f'{target_lang} > {src_lang}', 'В_картки']
+
+    elif reverse == 'cancel':
+        await callback.answer('cancel')
+        await callback.message.edit_reply_markup(reply_markup=None)

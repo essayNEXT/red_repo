@@ -1,6 +1,7 @@
 import sqlite3
 from lang_target import get_supported_languages
 from settings import project_id
+import json
 
 
 with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до БД
@@ -9,14 +10,14 @@ with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до
 
     ''' Опис полів БД
         таблиця users
-        telegram_id (INTEGER) - id користувача (беремо з телеграма за командою /start) 
+        telegram_id (VARCHAR) - id користувача (беремо з телеграма за командою /start) 
         lang_code (VARCHAR) - код мови, яку додаємо до Вибраних
         interface_lang (BOOL) - мова інтерфейсу, одна з Вибраних
         src_lang (BOOL) - вказує на поточну джерело-мову перекладу (з якою перекладаємо)
         target_lang (BOOL) - вказує на поточну цільову мову перекладу (на яку перекладаємо)
         is_active (BOOL) - видаляє мову з Вибраних, якщо interface_lang=0 і target_lang=0
         
-        таблиця languages
+        таблиця languages - убрав
         lang_code (VARCHAR) - код мови, яку додаємо до Вибраних (uk)
         lang_name (VARCHAR) - им'я мови, яку додаємо до Вибраних (Ukrainian), це поле заповнюється на мові інтерфейсу
     
@@ -31,7 +32,7 @@ with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до
     '''
     cur = con.cursor()
     cur.execute('''CREATE TABLE IF NOT EXISTS users (
-                    telegram_id INTEGER       NOT NULL,
+                    telegram_id VARCHAR       NOT NULL,
                     lang_code   VARCHAR       NOT NULL,
                     interface_lang BOOL       NOT NULL
                                               DEFAULT (0),
@@ -43,20 +44,27 @@ with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до
                                               DEFAULT (1),
                     PRIMARY KEY(telegram_id, lang_code) 
         )''')
-    cur.execute('''CREATE TABLE IF NOT EXISTS languages (
-                        lang_code VARCHAR       NOT NULL
-                                             PRIMARY KEY,
-                        lang_name VARCHAR       NOT NULL
-        )''')
+    # cur.execute('''CREATE TABLE IF NOT EXISTS languages (
+    #                     lang_code VARCHAR       NOT NULL
+    #                                          PRIMARY KEY,
+    #                     lang_name VARCHAR       NOT NULL
+    #     )''')
     cur.execute('''CREATE TABLE IF NOT EXISTS transl_but (
-                        lang_code VARCHAR       NOT NULL
+                        lang_code   VARCHAR        NOT NULL
                                                 PRIMARY KEY,
-                        lang_list_name VARCHAR       NOT NULL
+                        lang_dict      TEXT     NOT NULL
         )''')
     cur.execute('''CREATE TABLE IF NOT EXISTS page (
-                            telegram_id INTEGER      NOT NULL
+                            telegram_id VARCHAR      NOT NULL
                                                   PRIMARY KEY,
                             page INTEGER             NOT NULL
+            )''')
+    cur.execute('''CREATE TABLE IF NOT EXISTS cards (
+                        telegram_id         VARCHAR       NOT NULL,
+                        lang_code_src       VARCHAR       NOT NULL,
+                        txt_src             VARCHAR       NOT NULL,
+                        lang_code_target    VARCHAR       NOT NULL,
+                        txt_target          VARCHAR       NOT NULL
             )''')
 
     con.commit()
@@ -89,29 +97,46 @@ def set_user(user_id: str, lang_code: str) -> None:
 # ============================================= set_langs_all =====================================
 def set_langs_all(lang_code: str) -> None:
     # отримуємо від гугла список підтримуваних мов мовою користувача
-    LANGDICT = get_supported_languages(project_id, lang_code)
+    lang_dict = get_supported_languages(project_id, lang_code)
+    print(lang_dict)
+
+    # Преобразуем словарь в строку
+    lang_str = json.dumps(lang_dict)
+    print(lang_str)
 
     # записуємо довідник від гугла у БД
     mycursor = con.cursor()
-    mycursor.execute("Delete from languages")  # обнуляем базу
-    sql = "INSERT INTO languages (lang_code, lang_name) VALUES (?, ?)"
+    # mycursor.execute("Delete from languages")  # обнуляем базу
+    # sql = "INSERT OR REPLACE INTO languages (lang_code, lang_name) VALUES (?, ?)"
 
-    for key, value in LANGDICT.items():
-        val = (key, value)
-        mycursor.execute(sql, val)
+    # створюємо запис (вставити, або замінити, якщо вже є)
+    sql = "INSERT OR REPLACE INTO transl_but (lang_code, lang_dict) VALUES (?, ?)"
+    val = (lang_code, lang_str)
+    mycursor.execute(sql, val)
 
+    # for key, value in LANGDICT.items():
+    #     val = (key, value)
+    #     mycursor.execute(sql, val)
+
+    # INSERT OR REPLACE INTO TABLE (NAME, DATE, JOB, HOURS) VALUES ('BOB', '12/01/01', 'PM','30');
     con.commit()
 
 
 # ====================================================== ALL ==============================
-def get_langs_all() -> dict:
+def get_langs_all(lang_code: str) -> dict:
     mycursor = con.cursor()
-    sql = "SELECT lang_code, lang_name FROM languages"
-    mycursor.execute(sql)
-    myresult = mycursor.fetchall()   # отримуємо список кортежів
-    # print(myresult)
-    LANGDICT = dict(myresult)
-    return LANGDICT
+    # sql = "SELECT lang_code, lang_name FROM languages"
+    sql = "SELECT lang_dict FROM transl_but WHERE lang_code = ?"
+    val = (lang_code,)
+    mycursor.execute(sql, val)
+
+    lang_str = mycursor.fetchone()   # отримуємо кортеж
+    print(lang_str[0])
+
+    lang_dict = json.loads(lang_str[0])  # зворотне преобразуванне строка-словарь
+    print(lang_dict)
+
+    return lang_dict
 
 
 # ==================================================== ACTIV ================================
@@ -261,3 +286,18 @@ def set_user_page(user_id: str, page: int) -> None:
 
     con.commit()
     print(f' set ADD page = {page}')
+
+
+# ================================================ Cards ===============================
+def set_cards(user_id: str, lang_code_src:str, txt_src:str, lang_code_target:str, txt_target:str) -> None:
+    mycursor = con.cursor()
+    sql = "INSERT INTO cards (telegram_id, lang_code_src, txt_src, lang_code_target, txt_target) " \
+          "VALUES (?, ?, ?, ?, ?)"  # створюємо запис (вставити, або замінити, якщо вже є)
+    val = (user_id, lang_code_src, txt_src, lang_code_target, txt_target)
+    mycursor.execute(sql, val)
+    con.commit()
+
+
+if __name__ == '__main__':
+    lang_code = 'ru'
+    set_langs_all(lang_code)
