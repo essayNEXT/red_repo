@@ -34,7 +34,7 @@ class KeyboardPaginatorRedTeam(Paginator):
 
     def __call__(self, *args, **kwargs):
         paginator = super().__call__(*args, **kwargs)
-        paginator.inline_keyboard.append(self.upper_immutable_buttons) if self.upper_immutable_buttons else None
+        paginator.inline_keyboard.insert(0, self.upper_immutable_buttons) if self.upper_immutable_buttons else None
         paginator.inline_keyboard.append(self.immutable_buttons) if self.immutable_buttons else None
         return paginator
 
