@@ -27,12 +27,14 @@ class KeyboardPaginatorRedTeam(Paginator):
     Службовий/внутрішній клас до функції paginator_red_team
     """
 
-    def __init__(self, immutable_buttons: Dict | None = None, *args, **kwargs):
+    def __init__(self, immutable_buttons=None, upper_immutable_buttons=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.immutable_buttons = immutable_buttons
+        self.upper_immutable_buttons = upper_immutable_buttons
 
     def __call__(self, *args, **kwargs):
         paginator = super().__call__(*args, **kwargs)
+        paginator.inline_keyboard.append(self.upper_immutable_buttons) if self.upper_immutable_buttons else None
         paginator.inline_keyboard.append(self.immutable_buttons) if self.immutable_buttons else None
         return paginator
 
@@ -45,6 +47,7 @@ def paginator_red_team(mutable_keyboard: types.InlineKeyboardMarkup |
                        pre: str = None,
                        column: int = 3,
                        row: int = 5,
+                       upper_immutable_buttons: Dict = None,
                        immutable_buttons: Dict = None,
                        dp: Router = router2,
                        *args, **kwargs):
@@ -71,9 +74,10 @@ def paginator_red_team(mutable_keyboard: types.InlineKeyboardMarkup |
                   Iterable[types.InlineKeyboardButton] |
                   Iterable[Iterable[types.InlineKeyboardButton]] |
                   InlineKeyboardBuilder
-    :param mutable_buttons: Dict[sts: str] словник з набором параметрів, для формування Inline-клавіатури користувача
+    :param mutable_buttons: Dict[sts: str] словник з набором параметрів, для формування основної частини Inline-клавіатури користувача
     :param pre: перша половина callback_data
-    :param immutable_buttons: словник з набором параметрів, для формування Inline-клавіатури незмінних кнопок
+    :param upper_immutable_buttons: словник з набором параметрів, для формування верхньої частини Inline-клавіатури незмінних кнопок
+    :param immutable_buttons: словник з набором параметрів, для формування нижньої частини Inline-клавіатури незмінних кнопок
     :param dp:
     :param column: кількість кнопок в ряді
     :param row:  кількість рядів на одному листі пагінації
@@ -81,6 +85,9 @@ def paginator_red_team(mutable_keyboard: types.InlineKeyboardMarkup |
     :param kwargs:
     :return: повертає готовий ТГ-об'єкт Inline-клавіатуру для інтерактивної комунікації користувача з програмою
     """
+    if upper_immutable_buttons:  # формування незмінних кнопок upper клави
+        upper_immutable_buttons = [InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk.lower()}')
+                             for callbk, text in upper_immutable_buttons.items()]
     if immutable_buttons:  # формування незмінних кнопок знизу клави
         immutable_buttons = [InlineKeyboardButton(text=text, callback_data=callbk.lower())
                              for callbk, text in immutable_buttons.items()]
@@ -93,7 +100,7 @@ def paginator_red_team(mutable_keyboard: types.InlineKeyboardMarkup |
             mutable_keyboard.add(InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk}'))
 
     mutable_keyboard.adjust(column)
-    paginator = KeyboardPaginatorRedTeam(data=mutable_keyboard.as_markup(),
+    paginator = KeyboardPaginatorRedTeam(data=mutable_keyboard, upper_immutable_buttons=upper_immutable_buttons,
                                          immutable_buttons=immutable_buttons, size=row, dp=dp)
     # paginator = Paginator(data=mutable_keyboard.as_markup(), size=row, dp=dp)
     return paginator()
