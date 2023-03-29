@@ -179,7 +179,7 @@ async def show_favor_lang(message: Message):
 async def show_all_lang(message: Message):
     user_id = str(message.from_user.id)
     pre = 'add: '  # префікс для обробки callback-a
-    immutable_buttons = "Cancel",  # кортеж незмінних кнопок ("Скасувати")
+    immutable_buttons = [("first_lang", "second_lang"), ("Cancel",)]  # список з кортежів незмінних кнопок ("Скасувати")
     immutable_buttons = await button_translation(user_id, immutable_buttons)
 
     # отримуємо список обраних мов (щоб виключити їх зі списку мов, які можно додати)
@@ -187,8 +187,7 @@ async def show_all_lang(message: Message):
     lang_interf = filter(None, (map(lambda x: x[1] * x[0], lst))).__next__() or "en"
     localization_manager.user_conf.update(
         {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
-    # отримуємо з БД список доступних мов
-    # LANGDICT = get_langs_all(lang_interf)
+    # отримуємо з БД список доступних мов    # LANGDICT = get_langs_all(lang_interf)
     langdict = await localization_manager.get_localized_lang(lang_interf)
     langdict = langdict.copy()
     for i in lst:
