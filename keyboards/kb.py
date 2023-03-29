@@ -89,7 +89,7 @@ def paginator_red_team(mutable_keyboard: types.InlineKeyboardMarkup |
         upper_immutable_buttons = [InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk.lower()}')
                              for callbk, text in upper_immutable_buttons.items()]
     if immutable_buttons:  # формування незмінних кнопок знизу клави
-        immutable_buttons = [InlineKeyboardButton(text=text, callback_data=callbk.lower())
+        immutable_buttons = [InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk.lower()}')
                              for callbk, text in immutable_buttons.items()]
     else:
         immutable_buttons = types.InlineKeyboardButton(text='Cancel', callback_data='cancel')
