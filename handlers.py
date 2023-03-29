@@ -249,7 +249,7 @@ async def add_lang(callback: CallbackQuery, state: FSMContext):
                 f"дякуємо ваш вибір збережено "f"{user_data['first_lang']} ---- {user_data['second_lang']}")
             await callback.message.delete()
             await state.clear()
-    
+
             ##
         elif current_state == ADDChoice.choosing_second_lang or current_state == ADDChoice.choosing_first_lang:
             await callback.message.edit_text(text=f'Ви ще не зробили вибір \n. '
@@ -260,21 +260,23 @@ async def add_lang(callback: CallbackQuery, state: FSMContext):
                      f" ----- "
                      f"{user_data.get('second_lang', 'виберіть іншу мову')} ",
                 reply_markup=user_data["reply_markup_link"])
-        
+
     elif callbk_data == 'cancel':
         print(f'callback button  "cancel" IN {user_id}, {callbk_data}')
         current_state = await state.get_state()
-        await callback.message.edit_text(text=f'callback button "cancel" IN {user_id}, {callbk_data} state {current_state}',
-                                         reply_markup=None)
+        await callback.message.edit_text(
+            text=f'callback button "cancel" IN {user_id}, {callbk_data} state {current_state}',
+            reply_markup=None)
         await sleep(2)
-        await callback.answer(" вибір скасовано ") 
+        await callback.answer(" вибір скасовано ")
         await callback.message.delete()
         await state.clear()
         pass
     ###################################@router.callback_query(Text(startswith='add:'), ADDChoice.choosing_first_lang)
     elif current_state == ADDChoice.choosing_first_lang:
         print(f'callback button "Add" IN {user_id}, {callbk_data} state {current_state}')
-        await callback.message.edit_text(text=f'callback button "Add" IN {user_id}, {callbk_data} state {current_state}')
+        await callback.message.edit_text(
+            text=f'callback button "Add" IN {user_id}, {callbk_data} state {current_state}')
         # await sleep(5)
         if callbk_data in ["first_lang", 'second_lang']:
             await callback.message.edit_text(text=f'Ви ще не нічого не вибирали')
@@ -295,12 +297,12 @@ async def add_lang(callback: CallbackQuery, state: FSMContext):
                 await state.set_state(ADDChoice.choosing_ok)
             else:
                 await state.set_state(ADDChoice.choosing_second_lang)
-###################################@router.callback_query(Text(startswith='add:'), ADDChoice.choosing_second_lang)
+    ###################################@router.callback_query(Text(startswith='add:'), ADDChoice.choosing_second_lang)
     elif current_state == ADDChoice.choosing_second_lang:
         print(f'callback button second "Add" IN {user_id}, {callbk_data}')
         await callback.message.edit_text(text=f'callback button second "Add" IN {user_id}, {callbk_data}')
         await sleep(2)
-        if callbk_data in ["first_lang", 'second_lang']: # якщо нажали верхні дві кнопки
+        if callbk_data in ["first_lang", 'second_lang']:  # якщо нажали верхні дві кнопки
             await callback.message.edit_text(text=f'зробіть повторно свій вибір')
             if user_data.get(callbk_data, None):
                 if callbk_data == "first_lang":
@@ -315,22 +317,22 @@ async def add_lang(callback: CallbackQuery, state: FSMContext):
                 text=f"{user_data.get('first_lang', 'виберіть іншу мову')} "
                      f" ----- "
                      f"{user_data.get('second_lang', 'виберіть іншу мову')} ",
-                reply_markup=user_data["reply_markup_link"] )
+                reply_markup=user_data["reply_markup_link"])
         else:  # тут вже вибрали другу мову
 
             await callback.message.edit_text(
                 text=f"{user_data.get('first_lang', 'виберіть іншу мову')} "
                      f" ---322--- "
                      f"{callbk_data} ",
-                reply_markup=user_data["reply_markup_link"] )
+                reply_markup=user_data["reply_markup_link"])
             await state.set_state(ADDChoice.choosing_ok)
             await state.update_data(second_lang=callbk_data)
-################################@router.callback_query(Text(startswith='add:'), ADDChoice.choosing_ok)
+    ################################@router.callback_query(Text(startswith='add:'), ADDChoice.choosing_ok)
     elif current_state == ADDChoice.choosing_ok:
         print(f'callback button second "Add" IN {user_id}, {callbk_data}')
         await callback.message.edit_text(text=f'callback choosing_ok "Add" IN {user_id}, {callbk_data}')
         await sleep(2)
-        if callbk_data in ["first_lang", 'second_lang']: # якщо нажали верхні дві кнопки
+        if callbk_data in ["first_lang", 'second_lang']:  # якщо нажали верхні дві кнопки
             await callback.message.edit_text(text=f'зробіть повторно свій вибір')
             if user_data.get(callbk_data, None):
                 if callbk_data == "first_lang":
@@ -346,7 +348,7 @@ async def add_lang(callback: CallbackQuery, state: FSMContext):
                 text=f"{user_data.get('first_lang', 'виберіть іншу мову')} "
                      f" ----- "
                      f"{user_data.get('second_lang', 'виберіть іншу мову')} ",
-                reply_markup=user_data["reply_markup_link"] )
+                reply_markup=user_data["reply_markup_link"])
 
 
 # видалити мову з обраних - кнопка "Delete"  ======================== DELETE ===============================
