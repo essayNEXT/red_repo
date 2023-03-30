@@ -300,3 +300,21 @@ def kb_add_my(user_id, page=0, row=5, column=3) -> InlineKeyboardMarkup:
 
     kb.row(*button_row)
     return kb.as_markup()
+
+
+# ================================== training ======================
+def kb_train(immut_dict: dict, column=6) -> InlineKeyboardMarkup:
+    """
+    - тренування - завершити, продовжити
+    - додавання слова в картки для тренування
+    :param immut_dict: словник с найменуваннями незмінних кнопок
+    :param pre: префікс для обробки callback-a
+    :param column: максимальна кількість кнопок у рядку
+    :return: об'єкт inline-клавіатури
+    """
+    #print(buttons)
+    kb = InlineKeyboardBuilder()
+    for i, j in immut_dict.items():
+        kb.add(InlineKeyboardButton(text=i, callback_data=f'{j}'))
+    kb.adjust(column)
+    return kb.as_markup()

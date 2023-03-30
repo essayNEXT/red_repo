@@ -61,13 +61,13 @@ with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до
                             page INTEGER             NOT NULL
             )''')
     cur.execute('''CREATE TABLE IF NOT EXISTS cards (
-    telegram_id      VARCHAR NOT NULL,
-    lang_code_src    VARCHAR NOT NULL,
-    txt_src          VARCHAR NOT NULL,
-    lang_code_target VARCHAR NOT NULL,
-    txt_target       VARCHAR NOT NULL,
-    is_active        BOOL    NOT NULL
-                             DEFAULT (1) 
+                            telegram_id      VARCHAR NOT NULL,
+                            lang_code_src    VARCHAR NOT NULL,
+                            txt_src          VARCHAR NOT NULL,
+                            lang_code_target VARCHAR NOT NULL,
+                            txt_target       VARCHAR NOT NULL,
+                            is_active        BOOL    NOT NULL
+                                                     DEFAULT (1) 
             )''')
 
     con.commit()
@@ -303,7 +303,7 @@ def set_cards(user_id: str, lang_code_src: str, txt_src: str, lang_code_target: 
 
 
 # ============ Тренування ===================
-def get_cards(user_id: str, is_active=1) -> tuple:  # случайная выборка 1 пары перевода
+def get_cards(user_id: str, is_active=1) -> tuple:  # випадкова вибірка 1 пари перекладу
     mycursor = con.cursor()
     sql = '''SELECT lang_code_src, txt_src, lang_code_target, txt_target 
              FROM cards 
@@ -311,11 +311,12 @@ def get_cards(user_id: str, is_active=1) -> tuple:  # случайная выб�
     val = (user_id, is_active)
     mycursor.execute(sql, val)
     lst = mycursor.fetchall()  # отримуємо список кортежів
+    print(lst)
     end = len(lst)
     ran = randint(0, end)
 
     print(lst[ran], ran)
-    return lst[ran]
+    return lst[ran]  # ('en', 'suit', 'uk', 'костюм')
 
 
 if __name__ == '__main__':

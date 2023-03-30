@@ -8,7 +8,7 @@ from aiogram import Router, F
 
 from keyboards import localization_manager
 from translate import translate_message
-from keyboards.kb import kb_reply, paginator_red_team, router2, kb_favor, kb_reverse, kb_add_my
+from keyboards.kb import kb_reply, paginator_red_team, router2, kb_favor,  kb_reverse, kb_add_my, kb_train
 # kb_del, kb_interface, kb_add
 from db import get_langs_all, get_langs_activ, get_langs_translate, get_cards, \
     set_langs_flag, set_del_lang, set_user, set_langs_all, set_user_page, set_cards
@@ -201,7 +201,8 @@ async def show_all_lang(message: Message, state: FSMContext):
     lang_interf = filter(None, (map(lambda x: x[1] * x[0], lst))).__next__() or "en"
     localization_manager.user_conf.update(
         {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
-    # отримуємо з БД список доступних мов    # LANGDICT = get_langs_all(lang_interf)
+    # отримуємо з БД список доступних мов
+    # LANGDICT = get_langs_all(lang_interf)
     langdict = await localization_manager.get_localized_lang(lang_interf)
     langdict = langdict.copy()
     for i in lst:
@@ -479,6 +480,7 @@ async def training(message: Message):
     user_id = str(message.from_user.id)
     lst = message.text.split()
     print(f'message - {lst}')
+    immut_dict = {'Завершити': 'cancel', 'Продовжити': '!:'}
 
     if len(lst) == 1:
         train = get_cards(user_id)  # ('en', 'umbrella', 'uk', 'парасолька')
@@ -487,11 +489,25 @@ async def training(message: Message):
         number += 1
         result += 1
         await message.answer(text=f"Переклад получен. Вімінно, +1 у карму\n" \
-                                  f"Ваш результат {result} из {number}")
+                                  f"Ваш результат {result} из {number}", reply_markup=kb_train(immut_dict))
     else:
         number += 1
         await message.answer(text=f"Переклад получен. Помилка. Правильно - {train[3]} \n" \
-                                  f"Ваш результат {result} из {number}")
+                                  f"Ваш результат {result} из {number}", reply_markup=kb_train(immut_dict))
+
+
+# =================================================== Тренування CALLBACK =====================================
+@router.callback_query(Text(startswith='!:'))
+async def call_train(callback: CallbackQuery):
+    user_id = str(callback.from_user.id)
+    global train
+    train = get_cards(user_id)  # ('en', 'umbrella', 'uk', 'парасолька') -  випадковий кортеж даних
+
+    await callback.message.answer(text=f"Тренування, надай переклад слова <b>{train[1]}</b>  {train[0]} > {train[2]}")
+
+    await callback.answer('Продовжити')
+    await callback.message.edit_reply_markup(reply_markup=None)
+    # await callback.message.delete()
 
 
 # ======================================================== Translate ==============================
