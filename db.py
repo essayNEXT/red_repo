@@ -51,9 +51,11 @@ with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до
     #                     lang_name VARCHAR       NOT NULL
     #     )''')
     cur.execute('''CREATE TABLE IF NOT EXISTS transl_but (
-                        lang_code   VARCHAR        NOT NULL
-                                                PRIMARY KEY,
-                        lang_dict      TEXT     NOT NULL
+                        source    VARCHAR       DEFAULT Google
+                                                NOT NULL,
+                        lang_code   VARCHAR     NOT NULL,
+                        lang_dict      TEXT     NOT NULL,
+                        PRIMARY KEY(source, lang_code)
         )''')
     cur.execute('''CREATE TABLE IF NOT EXISTS page (
                             telegram_id VARCHAR      NOT NULL
