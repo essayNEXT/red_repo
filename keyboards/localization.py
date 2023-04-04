@@ -47,6 +47,7 @@ messages = {
         "Cancel": "Скасувати",
         "OK": "Гаразд",
         "Help": "Допомога",
+        "first_lang": "перша мова"
     },
     "fr": {
         "hello": "Bonjour, comment puis-je vous aider?",

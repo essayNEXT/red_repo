@@ -195,7 +195,7 @@ async def show_all_lang(message: Message, state: FSMContext):
     pre = 'add: '  # префікс для обробки callback-a
     immutable_buttons = "OK", "Cancel",  # [("first_lang", "second_lang"), ("Cancel",)]  # список з кортежів незмінних кнопок ("Скасувати")
     immutable_buttons = await button_translation(user_id, immutable_buttons)
-    upper_immutable_buttons = ("first_lang", "second_lang", "3_lang", "4_lang")
+    upper_immutable_buttons = ("first_lang", "second_lang", "3_lang")
     upper_immutable_buttons = await button_translation(user_id, upper_immutable_buttons)
     # отримуємо список обраних мов (щоб виключити їх зі списку мов, які можно додати)
     lst = get_langs_activ(user_id)  # отримуємо список кортежів [('uk', 1, 0, 1), ]
@@ -250,7 +250,7 @@ async def add_lang(callback: CallbackQuery, state: FSMContext):
         SET_BUTTONS: tuple = user_data.get("red_buttons")
         lang_list: list = list(user_data.get("langdict", {}).keys())  # список, щоб ловити  в хендлелі
         current_state = user_data.get("red_state")
-        if not current_state: raise
+        # if not current_state: raise
     except:
         callbk_data = 'cancel'
     print(f'callback button  "Add" IN {user_id}, {callbk_data}')
@@ -270,8 +270,8 @@ async def add_lang(callback: CallbackQuery, state: FSMContext):
             await state.clear()
             ##
         else:  # current_state == ADDChoice.choosing_second_lang or current_state == ADDChoice.choosing_first_lang:
-            await callback.message.edit_text(text=f'Ви ще не зробили вибір \n. '
-                                                  f'callback button "OK" IN {user_id}, {callbk_data} state {current_state}')
+            await callback.message.edit_text(text=f'Ви ще не зробили повністю вибір \n. ')
+                                                  # f'callback button "OK" IN {user_id}, {callbk_data} state {current_state}')
             await sleep(2)
             await callback.message.edit_text(
                 text=await f_message_text(user_dat=user_data.copy()),
