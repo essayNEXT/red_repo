@@ -1,4 +1,4 @@
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Tuple
 
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -47,8 +47,8 @@ def paginator_red_team(mutable_keyboard: types.InlineKeyboardMarkup |
                        pre: str = None,
                        column: int = 3,
                        row: int = 5,
-                       upper_immutable_buttons: Dict = None,
-                       immutable_buttons: Dict = None,
+                       upper_immutable_buttons: Dict | Tuple[str] = None,
+                       immutable_buttons: Dict | Tuple[str] = None,
                        dp: Router = router2,
                        *args, **kwargs):
     """
@@ -86,11 +86,23 @@ def paginator_red_team(mutable_keyboard: types.InlineKeyboardMarkup |
     :return: повертає готовий ТГ-об'єкт Inline-клавіатуру для інтерактивної комунікації користувача з програмою
     """
     if upper_immutable_buttons:  # формування незмінних кнопок upper клави
-        upper_immutable_buttons = [InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk.lower()}')
-                             for callbk, text in upper_immutable_buttons.items()]
+        if isinstance(upper_immutable_buttons, dict):
+            upper_immutable_buttons = [
+                InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk.replace(" ", "_").lower()}')
+                for callbk, text in upper_immutable_buttons.items()]
+        elif isinstance(upper_immutable_buttons, tuple):
+            upper_immutable_buttons = [
+                InlineKeyboardButton(text=text, callback_data=f'{pre} {text.replace(" ", "_").lower()}')
+                for text in upper_immutable_buttons]
     if immutable_buttons:  # формування незмінних кнопок знизу клави
-        immutable_buttons = [InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk.lower()}')
-                             for callbk, text in immutable_buttons.items()]
+        if isinstance(immutable_buttons, dict):
+            immutable_buttons = [
+                InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk.replace(" ", "_").lower()}')
+                for callbk, text in immutable_buttons.items()]
+        elif isinstance(immutable_buttons, tuple):
+            immutable_buttons = [
+                InlineKeyboardButton(text=text, callback_data=f'{pre} {text.replace(" ", "_").lower()}')
+                for text in immutable_buttons]
     else:
         immutable_buttons = types.InlineKeyboardButton(text='Cancel', callback_data='cancel')
 
@@ -210,7 +222,7 @@ def kb_favor(lang_favor: list[str], pre: str, immutable_buttons: dict[str], lst_
 
 
 # ================================== reverse translate ======================
-def kb_reverse(buttons: list[str], pre: str, text_s:str, text_t: str, column=6) -> InlineKeyboardMarkup:
+def kb_reverse(buttons: list[str], pre: str, text_s: str, text_t: str, column=6) -> InlineKeyboardMarkup:
     """
     - зміна направлення перекладу на протилежне
     - додавання слова в картки для тренування
@@ -254,7 +266,6 @@ def kb_add_my(user_id, page=0, row=5, column=3) -> InlineKeyboardMarkup:
 
     # отримуємо з БД словник доступних мов на мові інтерфейсу
     lang_dict = get_langs_all(lang_code)
-
 
     for i in lst:
         lang = i[0]
@@ -312,7 +323,7 @@ def kb_train(immut_dict: dict, column=6) -> InlineKeyboardMarkup:
     :param column: максимальна кількість кнопок у рядку
     :return: об'єкт inline-клавіатури
     """
-    #print(buttons)
+    # print(buttons)
     kb = InlineKeyboardBuilder()
     for i, j in immut_dict.items():
         kb.add(InlineKeyboardButton(text=i, callback_data=f'{j}'))

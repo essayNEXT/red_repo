@@ -84,9 +84,6 @@ class Paginator:
         :return: InlineKeyboardMarkup
         """
         _list_current_page = self._list_kb[current_page]
-        # print("step 1. self id= /t/t", id(self))
-        # print("step 1. list_kb= /t/t", id(self._list_kb))
-        
 
         paginations = self._get_paginator(
             id_red = id(self),

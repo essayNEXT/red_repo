@@ -332,6 +332,8 @@ async def show_all_lang(message: Message):
     localization_manager.user_conf.update(
         {str(user_id): lang_interf})  # Зміна мови юзера в тимчасовому словнику.  Тарас
     pre = 'del: '  # префікс для обробки callback-a
+    upper_immutable_buttons = "Cancel", "ddss", "ewww", " ewrqr efsef"
+    # upper_immutable_buttons = await button_translation(user_id, upper_immutable_buttons)
     immutable_buttons = "Cancel",  # кортеж незмінних кнопок ("Скасувати")
     immutable_buttons = await button_translation(user_id, immutable_buttons)
     langdict = {}
@@ -354,7 +356,7 @@ async def show_all_lang(message: Message):
     # Src, Target and Interface language cannot be deleted. Виберіть мову, яку треба видалити з Обраних
 
     await message.answer(await localization_manager.get_localized_message(user_id, "delete_answer"),
-                         reply_markup=paginator_red_team(mutable_buttons=lang_del, pre=pre,
+                         reply_markup=paginator_red_team(mutable_buttons=lang_del, pre=pre, upper_immutable_buttons=upper_immutable_buttons,
                                                          immutable_buttons=immutable_buttons))
     # await message.answer('Select the language you want to remove from Favorites',
     #                      reply_markup=kb_del(lang_del, pre, immutable_buttons))
