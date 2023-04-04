@@ -22,14 +22,22 @@ with sqlite3.connect('.venv/bot.sqlite3') as con:  # підключення до
         lang_code (VARCHAR) - код мови, яку додаємо до Вибраних (uk)
         lang_name (VARCHAR) - им'я мови, яку додаємо до Вибраних (Ukrainian), це поле заповнюється на мові інтерфейсу
     
-        таблиця transl_but - тут зберігаються переклади службових повідомлень, кнопок
-        lang_code VARCHAR 
-        lang_list_name VARCHAR
+        таблиця transl_but - тут зберігаються словники та в майбутьньому переклади службових повідомлень, кнопок
+        source VARCHAR - постачальник послуг перекладу
+        lang_code VARCHAR - код мови (uk)
+        lang_dict VARCHAR - им'я мови (Ukrainian)
         
         таблиця page - збереження станів клавіатури ADD-NEW
         telegram_id (INTEGER) - id користувача
         page INTEGER        - № сторінка клавіатури ADD-NEW
- 
+        
+        таблиця cards
+        telegram_id (VARCHAR) - id користувача (беремо з телеграма за командою /start) 
+        lang_code_src (VARCHAR) - код мови з якої перекладаємо
+        txt_src (VARCHAR) - текст до перекладу
+        lang_code_target (VARCHAR) - код мови на яку перекладаємо
+        txt_target (VARCHAR) - текст після перекладу
+        is_active (BOOL) - is_active = 0 - видаляє слово з Тренування
     '''
     cur = con.cursor()
     cur.execute('''CREATE TABLE IF NOT EXISTS users (
