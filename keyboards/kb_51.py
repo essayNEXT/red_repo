@@ -3,6 +3,8 @@ from typing import Dict, Iterable, Tuple
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import Router, types, Dispatcher
+
+from keyboards import localization_manager
 from keyboards.paginator_taras import Paginator
 from db import get_langs_all, get_langs_activ, get_user_page
 
@@ -17,9 +19,6 @@ class RedPaginator(Paginator):
         for x in name_buttons:
             result.update({x: str(f"{user_id}_lang_{x}")})
         return result
-
-    # @staticmethod
-    # def
 
     def __init__(
             self,
@@ -44,73 +43,77 @@ class RedPaginator(Paginator):
                     InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk.replace(" ", "_").lower()}'))
 
         mutable_keyboard.adjust(column)
-
-        # self.data = mutable_keyboard
-        # self.size = row
-        # self.dp = dp
         super().__init__(data=mutable_keyboard, size=row, dp=dp, *args, **kwargs)
         pass
 
-    def markup(self, *args, **kwargs):
-        return self.__call__(*args, **kwargs)
 
-
-class KeyboardPaginatorRedTeam(RedPaginator):
+class KeyboardPaginatorRedTeam51(RedPaginator):
 
     @staticmethod
     def create_button_tuple_dict(
             upper_or_immutable_buttons: dict | tuple,
-            pre: str = None) -> Iterable[types.InlineKeyboardButton] | None:
+            pre: str = None,
+            user_id=None) -> list[types.InlineKeyboardButton] | tuple | None:
+
+        def trans_immut_but(user_id, x):
+            return str(localization_manager.get_localized_message51(complex_id=user_id, message_key=x))
 
         if isinstance(upper_or_immutable_buttons, dict):
-            return [InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk.replace(" ", "_").lower()}')
+            return [InlineKeyboardButton(text=trans_immut_but(user_id, text),
+                                         callback_data=f'{pre} {callbk.replace(" ", "_").lower()}')
                     for callbk, text in upper_or_immutable_buttons.items()]
         elif isinstance(upper_or_immutable_buttons, tuple):
-            return [InlineKeyboardButton(text=text, callback_data=f'{pre} {text.replace(" ", "_").lower()}')
+            return [InlineKeyboardButton(text=trans_immut_but(user_id, text),
+                                         callback_data=f'{pre} {text.replace(" ", "_").lower()}')
                     for text in upper_or_immutable_buttons]
         else:
             return upper_or_immutable_buttons
         pass
 
-    def __init__(self, immutable_buttons=None, upper_immutable_buttons=None, pre: str = None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.immutable_buttons = immutable_buttons
-        self.upper_immutable_buttons = upper_immutable_buttons
+    def __init__(
+            self,
+            mutable_keyboard: types.InlineKeyboardMarkup |
+                              Iterable[types.InlineKeyboardButton] |
+                              Iterable[Iterable[types.InlineKeyboardButton]] |
+                              InlineKeyboardBuilder = None,
+            mutable_buttons: Dict = None,
+            pre: str = None,
+            column: int = 3,
+            row: int = 5,
+            upper_immutable_buttons: Dict | Tuple[str] = None,
+            immutable_buttons: Dict | Tuple[str] = None,
+            dp: Router = router3,
+            user_id: str = None,
+            *args, **kwargs):
 
+        super().__init__(
+            mutable_keyboard,
+            mutable_buttons,
+            pre,
+            column,
+            row,
+            dp,
+            user_id,
+            *args, **kwargs
+        )
         if upper_immutable_buttons:  # формування незмінних кнопок upper клави
-            upper_immutable_buttons = self.create_button_tuple_dict(upper_immutable_buttons, pre)
+            upper_immutable_buttons = self.create_button_tuple_dict(upper_immutable_buttons, pre, user_id)
         if immutable_buttons:  # формування незмінних кнопок знизу клави
-            if isinstance(immutable_buttons, dict):
-                immutable_buttons = [
-                    InlineKeyboardButton(text=text, callback_data=f'{pre} {callbk.replace(" ", "_").lower()}')
-                    for callbk, text in immutable_buttons.items()]
-            elif isinstance(immutable_buttons, tuple):
-                immutable_buttons = [
-                    InlineKeyboardButton(text=text, callback_data=f'{pre} {text.replace(" ", "_").lower()}')
-                    for text in immutable_buttons]
+            immutable_buttons = self.create_button_tuple_dict(immutable_buttons, pre, user_id)
         else:
             immutable_buttons = types.InlineKeyboardButton(text='Cancel', callback_data='cancel')
 
-    # def kb_add(lang_dict, pre: str, immutable_buttons: dict[str], column=3, row=5):
-    """
-       Створює inline-клавіатуру Add languages (додавання мови в Обрані)
-       :param
-       lang_dict: словник текстів для кнопок
-            {Lang_code: Lang_name}
-       pre: префікс для обробки callback-a
-       immutable_buttons: список назв до незмінних кнопок (наприклад, "Скасувати",)
+        self.immutable_buttons = immutable_buttons
+        self.upper_immutable_buttons = upper_immutable_buttons
+        # super().__init__(data=mutable_keyboard, size=row, dp=dp, *args, **kwargs)
 
-       :option column=3, row=5 - число колонок і строк відображення кнопок
-            вказані значення по замовчанню
-       :return: об'єкт inline-клавіатури
-       """
-    # kb = InlineKeyboardBuilder()
+    def __call__(self, *args, **kwargs):
+        paginator = super().__call__(*args, **kwargs)
+        paginator.inline_keyboard.insert(0, self.upper_immutable_buttons) if self.upper_immutable_buttons else None
+        paginator.inline_keyboard.append(self.immutable_buttons) if self.immutable_buttons else None
+        return paginator
 
-    # for i, j in lang_dict.items():
-    #     kb.add(InlineKeyboardButton(text=j, callback_data=f'{pre} {i}'))
-    # from itertools import islice
-    # list(iter(lambda: tuple(islice((iter(kb.as_markup().inline_keyboard)), 8)), ()))
-    # kb.adjust(column)
-    # paginator = RedPaginator(data=kb.as_markup(), size=row, dp=router3)
-    # return paginator()
-    # return paginator_red_team(mutable_keyboard=kb, immutable_buttons=immutable_buttons, dp=router2)
+    #
+    #
+    #
+    #

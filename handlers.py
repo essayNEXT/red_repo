@@ -7,7 +7,7 @@ from aiogram.filters import Command, Text
 from aiogram import Router, F
 
 from keyboards import localization_manager
-from keyboards.kb_51 import router3, RedPaginator
+from keyboards.kb_51 import router3, RedPaginator, KeyboardPaginatorRedTeam51
 from translate import translate_message
 from keyboards.kb import kb_reply, paginator_red_team, router2, kb_favor, kb_reverse, kb_add_my, kb_train
 # kb_del, kb_interface, kb_add
@@ -484,12 +484,29 @@ async def call_train(callback: CallbackQuery):
 
 # Додати в Обрані мови (відобразити всі мови) - кнопка "Add" ============== ADD Paginator Taras ===============
 @router.message(F.text == 'A2')
-async def show_all_lang(message: Message, state: FSMContext):
+async def show_all_lang2(message: Message, state: FSMContext):
     user_id = str(message.from_user.id)
     pre = 'a2: '  # префікс для обробки callback-a
     immutable_buttons = "OK", "Cancel",  # [("first_lang", "second_lang"), ("Cancel",)]  # список з кортежів незмінних кнопок ("Скасувати")
-    # immutable_buttons = await button_translation(user_id, immutable_buttons)
+
     upper_immutable_buttons = ("first_lang", "second_lang", "3_lang")
+
+    langdict = ('af', 'ak', 'sq', 'am', 'ar', 'hy', 'as', 'ay', 'az', 'bm', 'eu', 'be', 'bn', 'bho', 'bs', 'bg', 'ca', 'ceb', 'ny', 'zh', 'zh-CN', 'zh-TW', 'co', 'hr', 'cs', 'da', 'dv', 'doi', 'nl', 'en', 'eo', 'et', 'ee', 'tl', 'fi', 'fr', 'fy', 'gl', 'lg', 'ka', 'de', 'gom', 'el', 'gn', 'gu', 'ht', 'ha', 'haw', 'iw', 'he', 'hi', 'hmn', 'hu', 'is', 'ig', 'ilo', 'id', 'ga', 'it', 'ja', 'jw', 'jv', 'kn', 'kk', 'km', 'rw', 'ko', 'kri', 'ku', 'ckb', 'ky', 'lo', 'la', 'lv', 'ln', 'lt', 'lb', 'mk', 'mai', 'mg', 'ms', 'ml', 'mt', 'mni-Mtei', 'mi', 'mr', 'lus', 'mn', 'my', 'ne', 'nso', 'no', 'or', 'om', 'ps', 'fa', 'pl', 'pt', 'pa', 'qu', 'ro', 'ru', 'sm', 'sa', 'gd', 'sr', 'st', 'sn', 'sd', 'si', 'sk', 'sl', 'so', 'es', 'su', 'sw', 'sv', 'tg', 'ta', 'tt', 'te', 'th', 'ti', 'ts', 'tr', 'tk', 'uk', 'ur', 'ug', 'uz', 'vi', 'cy', 'xh', 'yi', 'yo', 'zu')
+
+    if localization_manager.user_conf.get(user_id) == "sq":
+        import itertools
+        langdict = langdict[0:8]#dict(itertools.islice(langdict.items(), 7))
+    red_kb = RedPaginator(mutable_buttons=langdict, pre=pre, user_id=user_id)
+    await message.answer(await localization_manager.get_localized_message(user_id, "add"), reply_markup=red_kb())
+
+
+@router.message(F.text == 'A3')
+async def show_all_lang3(message: Message, state: FSMContext):
+    user_id = str(message.from_user.id)
+    pre = 'A3: '  # префікс для обробки callback-a
+    immutable_buttons = "OK", "Cancel",  # [("first_lang", "second_lang"), ("Cancel",)]  # список з кортежів незмінних кнопок ("Скасувати")
+    # immutable_buttons = await button_translation(user_id, immutable_buttons)
+    upper_immutable_buttons = ("first lang", "SECOND LANG", "3 lang")
     # upper_immutable_buttons = await button_translation(user_id, upper_immutable_buttons)
     # отримуємо список обраних мов (щоб виключити їх зі списку мов, які можно додати)
     # lst = get_langs_activ(user_id)  # отримуємо список кортежів [('uk', 1, 0, 1), ]
@@ -508,15 +525,23 @@ async def show_all_lang(message: Message, state: FSMContext):
     if localization_manager.user_conf.get(user_id) == "sq":
         import itertools
         langdict = langdict[0:8]#dict(itertools.islice(langdict.items(), 7))
-    red_kb = RedPaginator(mutable_buttons=langdict, pre=pre, user_id=user_id)
+    red_kb = KeyboardPaginatorRedTeam51(mutable_buttons=langdict, pre=pre, user_id=user_id, immutable_buttons=immutable_buttons,
+                                        upper_immutable_buttons=upper_immutable_buttons)
     await message.answer(await localization_manager.get_localized_message(user_id, "add"),
-                         reply_markup=red_kb.markup())
+                         reply_markup=red_kb())
 
-    # await state.update_data(red_state=0)
-    # await state.update_data(red_buttons=tuple(upper_immutable_buttons.keys()))
-    # await state.update_data(langdict=langdict)
-    # await state.update_data(reply_markup_link=reply_markup_link)
-    pass
+@router.callback_query(Text(startswith='A3:'))
+async def add_lang(callback: CallbackQuery):
+    user_id = str(callback.from_user.id)
+    lang_code = callback.data.split()[1]  # відрізаємо префікс 'del:'
+    print(f'callback button "A3" IN {user_id}, {lang_code}')
+    await callback.answer(lang_code)
+    await callback.message.edit_text(text=lang_code,
+                                     reply_markup=callback.message.reply_markup)
+    # await callback.message.edit_reply_markup(reply_markup=None)
+    # await callback.message.delete()
+
+
 
 
 # ======================================================== Translate ==============================
