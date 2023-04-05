@@ -1,6 +1,8 @@
+from asyncio import sleep
 from typing import Dict, Iterable, Tuple
 
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.context import FSMContext
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import Router, types, Dispatcher
 
@@ -112,6 +114,102 @@ class KeyboardPaginatorRedTeam51(RedPaginator):
         paginator.inline_keyboard.insert(0, self.upper_immutable_buttons) if self.upper_immutable_buttons else None
         paginator.inline_keyboard.append(self.immutable_buttons) if self.immutable_buttons else None
         return paginator
+
+    async def callback_upper_button(self, callback: CallbackQuery, state: FSMContext):
+
+        async def f_choosing_ok_or_plus(user_dat: dict, curent_state) -> str | int:
+            for i_button_f in SET_BUTTONS:
+                if not user_dat.get(i_button_f, None):
+                    return curent_state + 1
+            else:  # якщо всі мови встановлені, цикл пройде до кінця, і виконається цей код
+                return "choosing_ok"  # state.set_state(ADDChoice.choosing_ok)
+
+        async def f_message_text(user_dat: dict) -> str:
+            return "---".join([user_dat.get(i_button_m, "не вибрано") for i_button_m in SET_BUTTONS])
+
+        #######################################################################################################
+        try:
+            user_id = str(callback.from_user.id)
+            callbk_data = callback.data.split()[1]  # відрізаємо префікс 'add:'
+            user_data = await state.get_data()  # порцию {user_data['chosen_food']}
+            SET_BUTTONS: tuple = user_data.get("red_buttons")
+            SET_BUTTONS: tuple = tuple(x.replace(" ", "_").lower() for x in SET_BUTTONS)
+            lang_list: list = user_data.get("langdict")  # список, щоб ловити  в хендлелі
+            current_state = user_data.get("red_state")
+            # if not current_state: raise
+        except:
+            callbk_data = 'cancel'
+        print(f'callback button  "Add" IN {user_id}, {callbk_data}')
+        if callbk_data == 'ok':
+            if current_state == "choosing_ok":  # ADDChoice.choosing_ok
+                # for i_button_f in SET_BUTTONS:
+                #     if not user_data.get(i_button_f, None):
+                #         set_langs_flag(user_id, user_data.get(i_button_f), is_active=0)
+                # set_langs_flag(user_id, user_data[SET_BUTTONS[0]], user_data[SET_BUTTONS[1]])
+                await callback.message.edit_text(text=f'callback button "Add" IN {user_id}, {callbk_data} state OK')
+                await sleep(2)
+                await callback.message.edit_text(text=f" дякуємо ваш вибір збережено=> "
+                                                      + await f_message_text(user_dat=user_data.copy()),
+                                                 reply_markup=None)
+                await sleep(5)
+                await callback.answer("дякуємо ваш вибір збережено " + await f_message_text(user_dat=user_data.copy()))
+                await callback.message.delete()
+                await state.clear()
+                res = "дякуємо ваш вибір збережено " + await f_message_text(user_dat=user_data.copy())
+                return res
+                ##
+            else:  # current_state == ADDChoice.choosing_second_lang or current_state == ADDChoice.choosing_first_lang:
+                await callback.message.edit_text(text=f'Ви ще не зробили повністю вибір \n. ')
+                # f'callback button "OK" IN {user_id}, {callbk_data} state {current_state}')
+                await sleep(2)
+                await callback.message.edit_text(
+                    text=await f_message_text(user_dat=user_data.copy()),
+                    reply_markup=callback.message.reply_markup)  # user_data["reply_markup_link"])
+
+        elif callbk_data == 'cancel':
+            print(f'callback button  "cancel" IN {user_id}, {callbk_data}')
+            # current_state = await state.get_state()
+            await callback.message.edit_text(
+                text=f'callback button "cancel" IN {user_id}, {callbk_data}',
+                reply_markup=None)
+            await sleep(2)
+            await callback.answer(" вибір скасовано ")
+            await callback.message.delete()
+            await state.clear()
+        ##################################@router.callback_query(Text(startswith='add:'), ADDChoice.choosing_second_lang)
+        elif callbk_data in SET_BUTTONS or callbk_data in lang_list:
+            print(f'callback button second "Add" IN {user_id}, {callbk_data}')
+            await callback.message.edit_text(text=f'callback "Add" IN {user_id}, {callbk_data}')
+            await sleep(2)
+            if callbk_data in SET_BUTTONS:  # ["first_lang", 'second_lang']:  # якщо нажали верхні дві кнопки
+                await callback.message.edit_text(text=f'зробіть повторно свій вибір')
+                if user_data.get(callbk_data, None):
+                    del user_data[callbk_data]
+                    user_data["red_state"] = SET_BUTTONS.index(
+                        callbk_data)  # if current_state == "choosing_ok" else current_state - 1
+                    # якщо стате не ОК, тоді -1. Якщо ОК - то міняється на позицію нажатої кнопки
+                    # заміна 20рядків коду умови  elif current_state == ADDChoice.choosing_ok
+                    # state.set_state(ADDChoice.choosing_first_lang)
+                else:
+                    await callback.message.edit_text(text=f'Ви ще не вибирали')  # ADDChoice.choosing_first_lang
+                await sleep(2)
+            else:  # тут вже вибрали  мову    треба придумати алгоритм або карент_стате або перший наступний
+                if not user_data.get(SET_BUTTONS[current_state], None):
+                    user_data[SET_BUTTONS[current_state]] = callbk_data
+                else:
+                    for i_button in SET_BUTTONS:
+                        if not user_data.get(i_button, None):
+                            user_data[i_button] = callbk_data
+                            break
+                    else:
+                        raise  # сюди ніколи не попадає
+                user_data["red_state"] = await f_choosing_ok_or_plus(user_dat=user_data.copy(),
+                                                                     curent_state=current_state)
+                await sleep(2)
+            await callback.message.edit_text(text=await f_message_text(user_dat=user_data.copy()),
+                                             reply_markup=callback.message.reply_markup)  # user_data["reply_markup_link"])
+            await state.set_data({})
+            await state.update_data(**user_data)
 
     #
     #
