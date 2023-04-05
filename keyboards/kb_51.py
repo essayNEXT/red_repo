@@ -104,15 +104,22 @@ class KeyboardPaginatorRedTeam51(RedPaginator):
             immutable_buttons = self.create_button_tuple_dict(immutable_buttons, pre, user_id)
         else:
             immutable_buttons = types.InlineKeyboardButton(text='Cancel', callback_data='cancel')
+        kb = InlineKeyboardBuilder()
+        kb.row(*upper_immutable_buttons)
+        kb.adjust(column)
+        upper_immutable_buttons = Paginator(data=kb, dp=dp)
 
+        self.upper_immutable_buttons = upper_immutable_buttons().inline_keyboard
         self.immutable_buttons = immutable_buttons
-        self.upper_immutable_buttons = upper_immutable_buttons
         # super().__init__(data=mutable_keyboard, size=row, dp=dp, *args, **kwargs)
 
     def __call__(self, *args, **kwargs):
         paginator = super().__call__(*args, **kwargs)
-        paginator.inline_keyboard.insert(0, self.upper_immutable_buttons) if self.upper_immutable_buttons else None
-        paginator.inline_keyboard.append(self.immutable_buttons) if self.immutable_buttons else None
+        if self.upper_immutable_buttons:
+            for x in self.upper_immutable_buttons[:-1]:
+                paginator.inline_keyboard.insert(0, x)
+        # paginator.inline_keyboard.insert(0, self.upper_immutable_buttons) if self.upper_immutable_buttons else None
+        paginator.inline_keyboard.extend(self.immutable_buttons) if self.immutable_buttons else None
         return paginator
 
     async def callback_upper_button(self, callback: CallbackQuery, state: FSMContext):
