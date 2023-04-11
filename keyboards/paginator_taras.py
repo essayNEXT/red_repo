@@ -38,7 +38,7 @@ class Paginator:
         self.page_separator = page_separator
         self._state = state
         self._size = size
-        self._startswith = callback_startswith
+        self._startswith = f"{callback_startswith}{id(self)}_"
         if isinstance(data, types.InlineKeyboardMarkup):
             self._list_kb = list(
                 self._chunk(
@@ -103,7 +103,7 @@ class Paginator:
 
         if self.dp:
             self.paginator_handler()
-
+        print(self.dp.shipping_query.router.callback_query.handlers.__len__())
         return keyboard
 
     @staticmethod
@@ -112,7 +112,7 @@ class Paginator:
         :param call: CallbackQuery in paginator handler.
         :return: Current page.
         """
-        return int(call.data.split("_")[1]), int(call.data.split("_")[2])
+        return int(call.data.split("_")[2]) #, int(call.data.split("_")[2])
 
     @staticmethod
     def _chunk(it, size) -> Iterator[tuple[Any, ...]]:
@@ -139,20 +139,21 @@ class Paginator:
         :return: Page control line buttons.
         """
         counts -= 1
-
+        if not startswith:
+            startswith = f"{startswith}{id_red}_"
         paginations = []
 
         if page > 0:
             paginations.append(
                 types.InlineKeyboardButton(
                     text='⏮️️',
-                    callback_data=f'{startswith}0_{id_red}'
+                    callback_data=f'{startswith}0'
                 )
             )
             paginations.append(
                 types.InlineKeyboardButton(
                     text='⬅️',
-                    callback_data=f'{startswith}{page - 1}_{id_red}'
+                    callback_data=f'{startswith}{page - 1}'
                 ),
             )
         paginations.append(
@@ -165,13 +166,13 @@ class Paginator:
             paginations.append(
                 types.InlineKeyboardButton(
                     text='➡️',
-                    callback_data=f'{startswith}{page + 1}_{id_red}'
+                    callback_data=f'{startswith}{page + 1}'
                 )
             )
             paginations.append(
                 types.InlineKeyboardButton(
                     text='⏭️',
-                    callback_data=f'{startswith}{counts}_{id_red}'
+                    callback_data=f'{startswith}{counts}'
                 )
             )
         return paginations
@@ -188,13 +189,13 @@ class Paginator:
         """
 
         async def _page(call: types.CallbackQuery, state: FSMContext):
-            page, red_self_id = self._get_page(call)
-            self_red_but = [obj for obj in gc.get_objects() if id(obj) == red_self_id][0]
+            page = self._get_page(call)
+            # self_red_but = [obj for obj in gc.get_objects() if id(obj) == red_self_id][0]
 
             # print("step 2. self id= /t/t", id(self))
             # print("step 2. self_red_but=/t/t ", id(self_red_but))
             await call.message.edit_reply_markup(
-                reply_markup=self_red_but.__call__(
+                reply_markup=self.__call__(
                     current_page=page
 
                 )
