@@ -103,7 +103,7 @@ class Paginator:
 
         if self.dp:
             self.paginator_handler()
-        print(self.dp.shipping_query.router.callback_query.handlers.__len__())
+        # print(self.dp.shipping_query.router.callback_query.handlers.__len__())
         return keyboard
 
     @staticmethod
